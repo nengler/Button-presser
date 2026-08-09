@@ -2,6 +2,8 @@
 
 A small TypeScript timing game that runs in the **browser** and in **Electron**.
 
+The whole game renders on a **320×180** canvas (16:9) and integer-scales up to fit the window.
+
 Press on every beat (about once per second). The closer you are to the exact beat, the more points you earn. Spend points on upgrades as you go.
 
 ## Quick start
@@ -31,8 +33,8 @@ npm run electron   # desktop window
 
 ```
 src/
-  game/           # shared logic (timing, upgrades, save)
-  renderer.ts     # UI / input (browser + Electron)
+  game/           # shared logic (timing, upgrades, save, view size)
+  renderer.ts     # 320×180 canvas UI + input
   electron-main.ts
 scripts/serve.mjs # zero-dependency static server
 index.html
