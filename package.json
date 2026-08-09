@@ -1,0 +1,21 @@
+{
+  "name": "button-presser",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A timing game — press every second. Closer means more points.",
+  "type": "module",
+  "main": "dist/electron-main.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "npm run build && node scripts/serve.mjs",
+    "electron": "npm run build && electron .",
+    "clean": "rm -rf dist",
+    "smoke": "npm run build && node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "electron": "^37.2.0",
+    "typescript": "^5.8.3"
+  }
+}
