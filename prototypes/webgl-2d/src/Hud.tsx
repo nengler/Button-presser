@@ -1,0 +1,131 @@
+import { UPGRADE_DEFS } from "../../../src/game/upgrades.ts";
+import type { GameSnapshot } from "../../../src/game/Game.ts";
+import type { UpgradeId } from "../../../src/game/types.ts";
+import { COLORS } from "../../../src/game/view.ts";
+
+const UPGRADE_ORDER = Object.keys(UPGRADE_DEFS) as UpgradeId[];
+
+const UPGRADE_SHORT: Record<UpgradeId, string> = {
+  multiplier: "MULT",
+  focus: "FOCUS",
+  tempo: "TEMPO",
+  combo: "COMBO",
+  warmup: "WARM",
+};
+
+function gradeColor(grade: string): string {
+  switch (grade) {
+    case "perfect":
+      return COLORS.perfect;
+    case "great":
+      return COLORS.great;
+    case "good":
+      return COLORS.good;
+    case "ok":
+      return COLORS.ok;
+    case "miss":
+      return COLORS.miss;
+    default:
+      return COLORS.sage;
+  }
+}
+
+export function Hud({
+  snap,
+  pressFlashUntil,
+  onToggle,
+  onPress,
+  onBuy,
+  onReset,
+}: {
+  snap: GameSnapshot;
+  pressFlashUntil: number;
+  onToggle: () => void;
+  onPress: () => void;
+  onBuy: (id: UpgradeId) => void;
+  onReset: () => void;
+}) {
+  const flashing = snap.running && performance.now() < pressFlashUntil;
+  const feedback = snap.lastResult
+    ? snap.lastResult.grade === "miss"
+      ? "MISS"
+      : `+${snap.lastResult.points} ${snap.lastResult.grade.toUpperCase()}`
+    : snap.running
+      ? "…"
+      : "ready";
+  const feedbackColor = snap.lastResult
+    ? gradeColor(snap.lastResult.grade)
+    : COLORS.sage;
+  const err = snap.lastResult
+    ? `${snap.lastResult.errorMs > 0 ? "+" : ""}${snap.lastResult.errorMs.toFixed(0)}ms`
+    : null;
+
+  return (
+    <div className="hud">
+      <div className="brand">
+        <div className="title">BUTTON PRESSER</div>
+        <div className="tag">hit the beat</div>
+      </div>
+
+      <div className="stats">
+        <span className="gold">SCR {Math.floor(snap.score)}</span>
+        <span>STR {snap.streak}</span>
+        <span className="sage">BEST {snap.bestStreak}</span>
+      </div>
+
+      <div className="feedback">
+        <div style={{ color: feedbackColor }}>{feedback}</div>
+        {err ? <div className="err">{err}</div> : null}
+      </div>
+
+      <div className="controls">
+        <button type="button" className="btn" onClick={onToggle}>
+          {snap.running ? "PAUSE" : "START"}
+        </button>
+        <button
+          type="button"
+          className={`btn press${flashing ? " flash" : ""}`}
+          disabled={!snap.running}
+          onClick={onPress}
+        >
+          PRESS
+        </button>
+        <div className="hint">SPACE or click</div>
+      </div>
+
+      <aside className="shop">
+        <div className="shop-head">
+          <span>UPGRADES</span>
+          <button type="button" className="reset" onClick={onReset}>
+            reset
+          </button>
+        </div>
+        {UPGRADE_ORDER.map((id) => {
+          const level = snap.upgrades[id];
+          const cost = snap.upgradeCosts[id];
+          const max = UPGRADE_DEFS[id].maxLevel;
+          const maxed = cost === null;
+          const canBuy = !maxed && snap.score >= (cost ?? Infinity);
+          return (
+            <div className="row" key={id}>
+              <div>
+                <div>{UPGRADE_SHORT[id]}</div>
+                <div className="lvl">
+                  {level}/{max}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="buy"
+                disabled={!canBuy}
+                onClick={() => onBuy(id)}
+              >
+                {maxed ? "MAX" : String(cost)}
+              </button>
+            </div>
+          );
+        })}
+      </aside>
+    </div>
+  );
+}

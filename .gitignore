@@ -1,5 +1,6 @@
 node_modules/
 dist/
+prototypes/webgl-2d/dist/
 *.log
 .DS_Store
 out/

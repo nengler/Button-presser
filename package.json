@@ -11,7 +11,8 @@
     "start": "npm run build && node scripts/serve.mjs",
     "electron": "npm run build && electron .",
     "clean": "rm -rf dist",
-    "smoke": "npm run build && node scripts/smoke.mjs"
+    "smoke": "npm run build && node scripts/smoke.mjs",
+    "proto": "npm --prefix prototypes/webgl-2d run dev"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

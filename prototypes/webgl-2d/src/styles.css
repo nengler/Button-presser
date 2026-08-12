@@ -1,0 +1,285 @@
+:root {
+  --ink: #14201c;
+  --ink2: #1c2c26;
+  --panel: #18241f;
+  --moss: #3d5c4a;
+  --sage: #9bb59a;
+  --foam: #e7f0e4;
+  --gold: #d4a24c;
+  --gold-hot: #f0c56d;
+  --dim: #5a7364;
+  --letterbox: #0a100e;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: var(--letterbox);
+  color: var(--foam);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.page {
+  padding: 16px 20px 32px;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.muted,
+.note {
+  color: var(--sage);
+  font-size: 13px;
+}
+
+.note {
+  max-width: 720px;
+  margin: 0 0 16px;
+  line-height: 1.4;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.tabs button {
+  background: var(--ink2);
+  color: var(--foam);
+  border: 1px solid var(--moss);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tabs button.on {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+}
+
+.frame {
+  display: grid;
+  place-items: center;
+}
+
+.stage {
+  position: relative;
+  width: 960px;
+  height: 540px;
+  background: var(--ink);
+  overflow: hidden;
+  image-rendering: pixelated;
+}
+
+.gl {
+  position: absolute;
+  inset: 0 336px 0 0;
+}
+
+.gl canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-size: 18px;
+}
+
+.hud button {
+  pointer-events: auto;
+  font: inherit;
+  cursor: pointer;
+}
+
+.brand {
+  position: absolute;
+  left: 24px;
+  top: 18px;
+}
+
+.title {
+  font-size: 22px;
+  letter-spacing: 0.04em;
+}
+
+.tag {
+  color: var(--sage);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.stats {
+  position: absolute;
+  left: 24px;
+  top: 88px;
+  display: flex;
+  gap: 22px;
+  font-size: 16px;
+}
+
+.stats .gold {
+  color: var(--gold-hot);
+}
+
+.stats .sage {
+  color: var(--sage);
+}
+
+.feedback {
+  position: absolute;
+  left: 0;
+  width: 624px;
+  top: 318px;
+  text-align: center;
+  font-size: 18px;
+}
+
+.feedback .err {
+  color: var(--dim);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.controls {
+  position: absolute;
+  left: 24px;
+  bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn {
+  background: var(--ink2);
+  color: var(--foam);
+  border: 1px solid var(--sage);
+  min-width: 88px;
+  height: 44px;
+}
+
+.btn.press {
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+  min-width: 168px;
+  font-size: 20px;
+}
+
+.btn.press:disabled {
+  background: var(--ink2);
+  color: var(--dim);
+}
+
+.btn.press.flash {
+  background: var(--gold-hot);
+}
+
+.hint {
+  position: absolute;
+  left: 88px;
+  top: 52px;
+  color: var(--dim);
+  font-size: 12px;
+  width: 200px;
+}
+
+.shop {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 336px;
+  height: 100%;
+  background: var(--panel);
+  border-left: 3px solid var(--moss);
+  padding: 16px 18px;
+  pointer-events: auto;
+}
+
+.shop-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.reset {
+  background: none;
+  border: none;
+  color: var(--dim);
+  padding: 0;
+}
+
+.reset:hover {
+  color: var(--gold-hot);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 72px;
+}
+
+.lvl {
+  color: var(--sage);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.buy {
+  width: 72px;
+  height: 32px;
+  background: var(--ink2);
+  color: var(--gold-hot);
+  border: 1px solid var(--gold);
+}
+
+.buy:disabled {
+  color: var(--dim);
+  border-color: var(--dim);
+}
+
+@media (max-width: 1000px) {
+  .stage {
+    width: 640px;
+    height: 360px;
+  }
+
+  .gl {
+    right: 224px;
+  }
+
+  .shop {
+    width: 224px;
+    padding: 10px 12px;
+  }
+
+  .hud {
+    font-size: 13px;
+  }
+
+  .feedback {
+    width: 416px;
+    top: 210px;
+  }
+}
