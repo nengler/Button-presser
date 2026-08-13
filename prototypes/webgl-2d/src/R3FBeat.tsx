@@ -1,8 +1,19 @@
 import { Canvas } from "@react-three/fiber";
 import { COLORS } from "../../../src/game/view.ts";
-import { BeatMeshes } from "./BeatMeshes.tsx";
+import { Playfield } from "./Playfield.tsx";
+import type { Burst, PadRuntime } from "./useFutureToys.ts";
 
-export function R3FBeat({ phase }: { phase: number }) {
+export function R3FBeat({
+  pads,
+  minions,
+  burst,
+  onPressPad,
+}: {
+  pads: PadRuntime[];
+  minions: number;
+  burst: Burst;
+  onPressPad: (id: string) => void;
+}) {
   return (
     <Canvas
       orthographic
@@ -11,7 +22,12 @@ export function R3FBeat({ phase }: { phase: number }) {
       dpr={1}
     >
       <color attach="background" args={[COLORS.ink]} />
-      <BeatMeshes phase={phase} />
+      <Playfield
+        pads={pads}
+        minions={minions}
+        burst={burst}
+        onPressPad={onPressPad}
+      />
     </Canvas>
   );
 }

@@ -46,26 +46,22 @@ Dependencies are kept minimal: **typescript** and **electron** only (both `devDe
 
 ## WebGL 2D prototype (R3F / CarverJS)
 
-The shipping game stays on a 320×180 canvas. A separate Vite app in `prototypes/webgl-2d` redraws the same `Game.ts` logic with:
-
-- an **HTML HUD** (buttons, shop, stats — normal DOM)
-- the beat ring in **WebGL**, either raw **R3F orthographic** or **CarverJS `mode="2d"`**
+The shipping game stays on a 320×180 canvas. A separate Vite app in `prototypes/webgl-2d` redraws the same `Game.ts` logic with a **React shop** and a **2D scene graph** for the world.
 
 ```bash
 npm run proto          # → http://localhost:5174
 ```
 
-For this title it is **not easier overall**. The interesting part (timing, scoring, upgrades) is already engine-agnostic. What changes is drawing:
+That split starts to pay off once the world is more than one ring:
 
-| | Canvas 2D (current) | R3F 2D | CarverJS 2D |
-|---|---|---|---|
-| Beat ring | `arc()` | a few meshes | `<Actor shape="circle\|ring">` wrapping those meshes |
-| HUD / shop | manual `fillRect` + hit tests | HTML/CSS | HTML/CSS (Carver’s own examples do this) |
-| Text | `fillText` | painful in WebGL; HTML overlay is the real win | same |
-| Extra deps | none | React, Three, R3F | those plus Carver, drei, zustand |
-| Pixel integer scale | trivial | fighting WebGL filtering / DPR | same |
+- **Shop** — React buttons, costs, disable states. No hit-testing.
+- **Particles** — burst on press (gold specks at the pad).
+- **Minions** — hire from the shop; they orbit a pad and hit leftover beats.
+- **Extra pads** — unlock PAD B / PAD C with their own timers; click the ring in the scene.
 
-CarverJS helps when you want actors, collisions, tweens, and a scene graph. Button Presser is a HUD around one pulsing ring, so Carver is mostly an R3F canvas with extra engine services you do not use. The HTML overlay *is* easier than canvas hit-testing — you can add that without Three.js.
+R3F and CarverJS share the same `Playfield`. Carver is `mode="2d"` around that playfield (actors/particles/tweens are there when you want them). The canvas renderer does not include these toys yet.
+
+`Game.spendScore` / `Game.addScore` / `Game.canPress` exist so the prototype shop and minions can share the real score.
 
 ## Extending
 

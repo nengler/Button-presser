@@ -6,7 +6,6 @@ import type { UpgradeId } from "../../../src/game/types.ts";
 export function useButtonPresser() {
   const game = useMemo(() => new Game(), []);
   const [snap, setSnap] = useState<GameSnapshot>(() => game.snapshot());
-  const [phase, setPhase] = useState(0);
   const [pressFlashUntil, setPressFlashUntil] = useState(0);
 
   useEffect(() => game.subscribe(setSnap), [game]);
@@ -14,11 +13,7 @@ export function useButtonPresser() {
   useEffect(() => {
     let id = 0;
     const tick = () => {
-      const live = game.snapshot();
-      setSnap(live);
-      setPhase(
-        live.running ? live.phase : (performance.now() / live.interval) % 1,
-      );
+      setSnap(game.snapshot());
       id = requestAnimationFrame(tick);
     };
     id = requestAnimationFrame(tick);
@@ -47,23 +42,10 @@ export function useButtonPresser() {
     if (confirm("Reset all progress?")) {
       game.resetProgress();
       game.stop();
+      return true;
     }
+    return false;
   }, [game]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code !== "Space" && e.key !== " ") return;
-      e.preventDefault();
-      if (!game.snapshot().running) {
-        game.start();
-        return;
-      }
-      game.press();
-      setPressFlashUntil(performance.now() + 120);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [game]);
-
-  return { game, snap, phase, pressFlashUntil, press, toggleRun, buy, reset };
+  return { game, snap, pressFlashUntil, press, toggleRun, buy, reset };
 }

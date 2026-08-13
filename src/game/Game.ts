@@ -123,6 +123,29 @@ export class Game {
     return true;
   }
 
+  /** True when this beat is still open (minions skip if the player already hit it). */
+  canPress(now = performance.now()): boolean {
+    if (!this.running) return false;
+    const interval = intervalMs(this.save.upgrades.tempo);
+    const { beatIndex } = nearestBeatError(now, this.origin, interval);
+    return !this.usedBeats.has(beatIndex);
+  }
+
+  addScore(points: number): void {
+    if (points === 0) return;
+    this.save.score += points;
+    this.persist();
+    this.emit();
+  }
+
+  spendScore(amount: number): boolean {
+    if (amount <= 0 || this.save.score < amount) return false;
+    this.save.score -= amount;
+    this.persist();
+    this.emit();
+    return true;
+  }
+
   resetProgress(): void {
     this.save = {
       version: 1,
