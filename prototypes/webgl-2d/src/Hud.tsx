@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { UPGRADE_DEFS } from "../../../src/game/upgrades.ts";
 import type { GameSnapshot } from "../../../src/game/Game.ts";
 import type { UpgradeId } from "../../../src/game/types.ts";
@@ -55,13 +56,14 @@ export function Hud({
   onHireMinion: () => void;
   onUnlockPad: (id: string) => void;
 }) {
+  const [tab, setTab] = useState<"upg" | "toys">("upg");
   const flashing = snap.running && performance.now() < pressFlashUntil;
   const feedback = snap.lastResult
     ? snap.lastResult.grade === "miss"
       ? "MISS"
       : `+${snap.lastResult.points} ${snap.lastResult.grade.toUpperCase()}`
     : snap.running
-      ? "…"
+      ? "..."
       : "ready";
   const feedbackColor = snap.lastResult
     ? gradeColor(snap.lastResult.grade)
@@ -74,7 +76,7 @@ export function Hud({
     <div className="hud">
       <div className="brand">
         <div className="title">BUTTON PRESSER</div>
-        <div className="tag">hit the beat · click a ring</div>
+        <div className="tag">hit the beat</div>
       </div>
 
       <div className="stats">
@@ -100,7 +102,7 @@ export function Hud({
         >
           PRESS
         </button>
-        <div className="hint">SPACE = pad A</div>
+        <div className="hint">SPACE / click ring</div>
       </div>
 
       <aside className="shop">
@@ -110,77 +112,94 @@ export function Hud({
             reset
           </button>
         </div>
-
-        <div className="shop-label">upgrades</div>
-        {UPGRADE_ORDER.map((id) => {
-          const level = snap.upgrades[id];
-          const cost = snap.upgradeCosts[id];
-          const max = UPGRADE_DEFS[id].maxLevel;
-          const maxed = cost === null;
-          const canBuy = !maxed && snap.score >= (cost ?? Infinity);
-          return (
-            <div className="row" key={id}>
-              <div>
-                <div>{UPGRADE_SHORT[id]}</div>
-                <div className="lvl">
-                  {level}/{max}
-                </div>
-              </div>
-              <button
-                type="button"
-                className="buy"
-                disabled={!canBuy}
-                onClick={() => onBuy(id)}
-              >
-                {maxed ? "MAX" : String(cost)}
-              </button>
-            </div>
-          );
-        })}
-
-        <div className="shop-label">crew</div>
-        <div className="row">
-          <div>
-            <div>MINION</div>
-            <div className="lvl">
-              {minions}/{MINION_MAX} auto-hit
-            </div>
-          </div>
+        <div className="shop-tabs">
           <button
             type="button"
-            className="buy"
-            disabled={minions >= MINION_MAX || snap.score < MINION_COST}
-            onClick={onHireMinion}
+            className={tab === "upg" ? "on" : ""}
+            onClick={() => setTab("upg")}
           >
-            {minions >= MINION_MAX ? "MAX" : String(MINION_COST)}
+            UPG
+          </button>
+          <button
+            type="button"
+            className={tab === "toys" ? "on" : ""}
+            onClick={() => setTab("toys")}
+          >
+            TOYS
           </button>
         </div>
 
-        <div className="shop-label">pads</div>
-        {EXTRA_PADS.map((pad) => {
-          const owned = pads.some((p) => p.id === pad.id);
-          const hint = pads.find((p) => p.id === pad.id)?.lastLabel;
-          return (
-            <div className="row" key={pad.id}>
+        {tab === "upg" &&
+          UPGRADE_ORDER.map((id) => {
+            const level = snap.upgrades[id];
+            const cost = snap.upgradeCosts[id];
+            const max = UPGRADE_DEFS[id].maxLevel;
+            const maxed = cost === null;
+            const canBuy = !maxed && snap.score >= (cost ?? Infinity);
+            return (
+              <div className="row" key={id}>
+                <div>
+                  <div>{UPGRADE_SHORT[id]}</div>
+                  <div className="lvl">
+                    {level}/{max}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="buy"
+                  disabled={!canBuy}
+                  onClick={() => onBuy(id)}
+                >
+                  {maxed ? "MAX" : String(cost)}
+                </button>
+              </div>
+            );
+          })}
+
+        {tab === "toys" && (
+          <>
+            <div className="row">
               <div>
-                <div>{pad.name}</div>
+                <div>MINION</div>
                 <div className="lvl">
-                  {owned
-                    ? `${(pad.interval / 1000).toFixed(1)}s ${hint ?? "click ring"}`
-                    : `${(pad.interval / 1000).toFixed(1)}s timer`}
+                  {minions}/{MINION_MAX} auto
                 </div>
               </div>
               <button
                 type="button"
                 className="buy"
-                disabled={owned || snap.score < pad.cost}
-                onClick={() => onUnlockPad(pad.id)}
+                disabled={minions >= MINION_MAX || snap.score < MINION_COST}
+                onClick={onHireMinion}
               >
-                {owned ? "OWN" : String(pad.cost)}
+                {minions >= MINION_MAX ? "MAX" : String(MINION_COST)}
               </button>
             </div>
-          );
-        })}
+            {EXTRA_PADS.map((pad) => {
+              const owned = pads.some((p) => p.id === pad.id);
+              const hint = pads.find((p) => p.id === pad.id)?.lastLabel;
+              return (
+                <div className="row" key={pad.id}>
+                  <div>
+                    <div>{pad.name}</div>
+                    <div className="lvl">
+                      {owned
+                        ? hint ?? `${(pad.interval / 1000).toFixed(1)}s`
+                        : `${(pad.interval / 1000).toFixed(1)}s`}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="buy"
+                    disabled={owned || snap.score < pad.cost}
+                    onClick={() => onUnlockPad(pad.id)}
+                  >
+                    {owned ? "OWN" : String(pad.cost)}
+                  </button>
+                </div>
+              );
+            })}
+          </>
+        )}
       </aside>
     </div>
   );

@@ -24,30 +24,31 @@ body,
   min-height: 100%;
   background: var(--letterbox);
   color: var(--foam);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: ui-monospace, "Courier New", monospace;
 }
 
 .page {
-  padding: 16px 20px 32px;
+  padding: 10px 12px 20px;
 }
 
 .bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 16px;
+  gap: 8px 14px;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
 }
 
 .muted,
 .note {
   color: var(--sage);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .note {
   max-width: 720px;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   line-height: 1.4;
 }
 
@@ -61,7 +62,8 @@ body,
   background: var(--ink2);
   color: var(--foam);
   border: 1px solid var(--moss);
-  padding: 6px 10px;
+  border-radius: 0;
+  padding: 4px 8px;
   font: inherit;
   font-size: 12px;
   cursor: pointer;
@@ -80,61 +82,76 @@ body,
 
 .stage {
   position: relative;
-  width: 960px;
-  height: 540px;
+  width: 320px;
+  height: 180px;
   background: var(--ink);
   overflow: hidden;
+  transform-origin: 0 0;
   image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+  font-smooth: never;
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 8px;
+  line-height: 1;
+  user-select: none;
 }
 
 .gl {
   position: absolute;
-  inset: 0 336px 0 0;
+  inset: 0 112px 0 0;
 }
 
 .gl canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .hud {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  font-size: 18px;
 }
 
 .hud button {
   pointer-events: auto;
-  font: inherit;
+  appearance: none;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 8px;
+  line-height: 1;
   cursor: pointer;
+  image-rendering: pixelated;
 }
 
 .brand {
   position: absolute;
-  left: 24px;
-  top: 18px;
+  left: 8px;
+  top: 6px;
 }
 
 .title {
-  font-size: 22px;
-  letter-spacing: 0.04em;
+  font-size: 10px;
+  color: var(--foam);
 }
 
 .tag {
   color: var(--sage);
-  font-size: 14px;
-  margin-top: 4px;
+  font-size: 7px;
+  margin-top: 2px;
 }
 
 .stats {
   position: absolute;
-  left: 24px;
-  top: 88px;
+  left: 8px;
+  top: 34px;
   display: flex;
-  gap: 22px;
-  font-size: 16px;
+  gap: 10px;
+  font-size: 8px;
 }
 
 .stats .gold {
@@ -148,41 +165,42 @@ body,
 .feedback {
   position: absolute;
   left: 0;
-  width: 624px;
-  top: 318px;
+  width: 208px;
+  top: 108px;
   text-align: center;
-  font-size: 18px;
+  font-size: 9px;
 }
 
 .feedback .err {
   color: var(--dim);
-  font-size: 13px;
-  margin-top: 4px;
+  font-size: 7px;
+  margin-top: 2px;
 }
 
 .controls {
   position: absolute;
-  left: 24px;
-  bottom: 28px;
+  left: 8px;
+  top: 128px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
 }
 
 .btn {
   background: var(--ink2);
   color: var(--foam);
   border: 1px solid var(--sage);
-  min-width: 88px;
-  height: 44px;
+  width: 44px;
+  height: 22px;
+  padding: 0;
 }
 
 .btn.press {
   background: var(--gold);
   color: var(--ink);
   border: none;
-  min-width: 168px;
-  font-size: 20px;
+  width: 84px;
+  font-size: 10px;
 }
 
 .btn.press:disabled {
@@ -196,39 +214,56 @@ body,
 
 .hint {
   position: absolute;
-  left: 88px;
-  top: 52px;
+  left: 50px;
+  top: 26px;
   color: var(--dim);
-  font-size: 12px;
-  width: 200px;
+  font-size: 6px;
+  width: 90px;
+  text-align: center;
 }
 
 .shop {
   position: absolute;
   top: 0;
   right: 0;
-  width: 336px;
+  width: 112px;
   height: 100%;
   background: var(--panel);
-  border-left: 3px solid var(--moss);
-  padding: 12px 16px 16px;
+  border-left: 1px solid var(--moss);
+  padding: 4px 6px 6px;
   pointer-events: auto;
-  overflow-y: auto;
-}
-
-.shop-label {
-  color: var(--dim);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin: 10px 0 4px;
+  overflow: hidden;
 }
 
 .shop-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  height: 12px;
+  margin-bottom: 2px;
+  font-size: 8px;
+  color: var(--foam);
+}
+
+.shop-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.shop-tabs button {
+  flex: 1;
+  height: 12px;
+  padding: 0;
+  background: var(--ink2);
+  color: var(--dim);
+  border: 1px solid var(--dim);
+}
+
+.shop-tabs button.on {
+  background: var(--moss);
+  color: var(--foam);
+  border-color: var(--sage);
 }
 
 .reset {
@@ -236,6 +271,7 @@ body,
   border: none;
   color: var(--dim);
   padding: 0;
+  height: 12px;
 }
 
 .reset:hover {
@@ -246,21 +282,23 @@ body,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 44px;
+  height: 26px;
 }
 
 .lvl {
   color: var(--sage);
-  font-size: 13px;
-  margin-top: 4px;
+  font-size: 6px;
+  margin-top: 2px;
 }
 
 .buy {
-  width: 72px;
-  height: 32px;
+  width: 36px;
+  height: 14px;
+  padding: 0;
   background: var(--ink2);
   color: var(--gold-hot);
   border: 1px solid var(--gold);
+  font-size: 7px;
 }
 
 .buy:disabled {
@@ -268,27 +306,6 @@ body,
   border-color: var(--dim);
 }
 
-@media (max-width: 1000px) {
-  .stage {
-    width: 640px;
-    height: 360px;
-  }
-
-  .gl {
-    right: 224px;
-  }
-
-  .shop {
-    width: 224px;
-    padding: 10px 12px;
-  }
-
-  .hud {
-    font-size: 13px;
-  }
-
-  .feedback {
-    width: 416px;
-    top: 210px;
-  }
+.buy:not(:disabled):hover {
+  background: var(--moss);
 }

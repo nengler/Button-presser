@@ -54,7 +54,7 @@ npm run proto          # → http://localhost:5174
 
 That split starts to pay off once the world is more than one ring:
 
-- **Shop** — React buttons, costs, disable states. No hit-testing.
+- **Shop** — React buttons at the same **320×180 integer scale** as the canvas game (chunky 8px type, 1px borders). Tabs: UPG / TOYS.
 - **Particles** — burst on press (gold specks at the pad).
 - **Minions** — hire from the shop; they orbit a pad and hit leftover beats.
 - **Extra pads** — unlock PAD B / PAD C with their own timers; click the ring in the scene.

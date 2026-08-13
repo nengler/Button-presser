@@ -17,9 +17,13 @@ export function R3FBeat({
   return (
     <Canvas
       orthographic
-      camera={{ position: [0, 0, 10], zoom: 70 }}
+      camera={{ position: [0, 0, 10], zoom: 23 }}
       gl={{ antialias: false, alpha: false }}
       dpr={1}
+      flat
+      onCreated={({ gl }) => {
+        gl.domElement.style.imageRendering = "pixelated";
+      }}
     >
       <color attach="background" args={[COLORS.ink]} />
       <Playfield

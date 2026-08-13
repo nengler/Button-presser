@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
+import { HEIGHT, WIDTH } from "../../../src/game/view.ts";
 import { CarverBeat } from "./CarverBeat.tsx";
 import { Hud } from "./Hud.tsx";
 import { R3FBeat } from "./R3FBeat.tsx";
 import { useButtonPresser } from "./useButtonPresser.ts";
 import { useFutureToys } from "./useFutureToys.ts";
+import { usePixelScale } from "./usePixelScale.ts";
 import "./styles.css";
 
 type Mode = "r3f" | "carver";
 
 export function App() {
   const [mode, setMode] = useState<Mode>("r3f");
+  const scale = usePixelScale();
   const { game, snap, pressFlashUntil, press, toggleRun, buy, reset } =
     useButtonPresser();
   const toys = useFutureToys(game, press);
@@ -54,14 +57,16 @@ export function App() {
       </header>
 
       <p className="note">
-        Shop items are React buttons. The world is a 2D scene: extra pads are
-        just more rings with their own timers, minions orbit and hit leftover
-        beats, sparks fire on a press. Same playfield in R3F or Carver — Carver
-        is the canvas wrapper.
+        Shop is React, but laid out at 320×180 and integer-scaled like the
+        canvas game so type and buttons stay chunky. Extra pads, minions, and
+        sparks live in the 2D scene.
       </p>
 
-      <div className="frame">
-        <div className="stage">
+      <div
+        className="frame"
+        style={{ width: WIDTH * scale, height: HEIGHT * scale }}
+      >
+        <div className="stage" style={{ transform: `scale(${scale})` }}>
           <div className="gl">
             {mode === "r3f" ? (
               <R3FBeat

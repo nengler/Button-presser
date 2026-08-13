@@ -19,10 +19,14 @@ export function CarverBeat({
     <Game
       mode="2d"
       dpr={1}
+      flat
       gl={{ antialias: false, alpha: false }}
       style={{ background: COLORS.ink }}
+      onCreated={({ gl }) => {
+        gl.domElement.style.imageRendering = "pixelated";
+      }}
     >
-      <World cameraProps2D={{ position: [0, 0, 100], zoom: 70 }}>
+      <World cameraProps2D={{ position: [0, 0, 100], zoom: 23 }}>
         <Playfield
           pads={pads}
           minions={minions}
