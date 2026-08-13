@@ -26,7 +26,7 @@ export function CarverBeat({
         gl.domElement.style.imageRendering = "pixelated";
       }}
     >
-      <World cameraProps2D={{ position: [0, 0, 100], zoom: 23 }}>
+      <World cameraProps2D={{ position: [0, 0, 100], zoom: 36 }}>
         <Playfield
           pads={pads}
           minions={minions}

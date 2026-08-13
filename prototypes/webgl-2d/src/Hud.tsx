@@ -1,20 +1,4 @@
-import { useState } from "react";
-import { UPGRADE_DEFS } from "../../../src/game/upgrades.ts";
-import type { GameSnapshot } from "../../../src/game/Game.ts";
-import type { UpgradeId } from "../../../src/game/types.ts";
 import { COLORS } from "../../../src/game/view.ts";
-import { EXTRA_PADS, MINION_COST, MINION_MAX } from "./futureShop.ts";
-import type { PadRuntime } from "./useFutureToys.ts";
-
-const UPGRADE_ORDER = Object.keys(UPGRADE_DEFS) as UpgradeId[];
-
-const UPGRADE_SHORT: Record<UpgradeId, string> = {
-  multiplier: "MULT",
-  focus: "FOCUS",
-  tempo: "TEMPO",
-  combo: "COMBO",
-  warmup: "WARM",
-};
 
 function gradeColor(grade: string): string {
   switch (grade) {
@@ -36,27 +20,26 @@ function gradeColor(grade: string): string {
 export function Hud({
   snap,
   pressFlashUntil,
-  pads,
-  minions,
   onToggle,
   onPress,
-  onBuy,
-  onReset,
-  onHireMinion,
-  onUnlockPad,
+  onTree,
 }: {
-  snap: GameSnapshot;
+  snap: {
+    score: number;
+    streak: number;
+    bestStreak: number;
+    running: boolean;
+    lastResult: {
+      grade: string;
+      points: number;
+      errorMs: number;
+    } | null;
+  };
   pressFlashUntil: number;
-  pads: PadRuntime[];
-  minions: number;
   onToggle: () => void;
   onPress: () => void;
-  onBuy: (id: UpgradeId) => void;
-  onReset: () => void;
-  onHireMinion: () => void;
-  onUnlockPad: (id: string) => void;
+  onTree: () => void;
 }) {
-  const [tab, setTab] = useState<"upg" | "toys">("upg");
   const flashing = snap.running && performance.now() < pressFlashUntil;
   const feedback = snap.lastResult
     ? snap.lastResult.grade === "miss"
@@ -78,6 +61,10 @@ export function Hud({
         <div className="title">BUTTON PRESSER</div>
         <div className="tag">hit the beat</div>
       </div>
+
+      <button type="button" className="tree-open" onClick={onTree}>
+        TREE
+      </button>
 
       <div className="stats">
         <span className="gold">SCR {Math.floor(snap.score)}</span>
@@ -104,103 +91,6 @@ export function Hud({
         </button>
         <div className="hint">SPACE / click ring</div>
       </div>
-
-      <aside className="shop">
-        <div className="shop-head">
-          <span>SHOP</span>
-          <button type="button" className="reset" onClick={onReset}>
-            reset
-          </button>
-        </div>
-        <div className="shop-tabs">
-          <button
-            type="button"
-            className={tab === "upg" ? "on" : ""}
-            onClick={() => setTab("upg")}
-          >
-            UPG
-          </button>
-          <button
-            type="button"
-            className={tab === "toys" ? "on" : ""}
-            onClick={() => setTab("toys")}
-          >
-            TOYS
-          </button>
-        </div>
-
-        {tab === "upg" &&
-          UPGRADE_ORDER.map((id) => {
-            const level = snap.upgrades[id];
-            const cost = snap.upgradeCosts[id];
-            const max = UPGRADE_DEFS[id].maxLevel;
-            const maxed = cost === null;
-            const canBuy = !maxed && snap.score >= (cost ?? Infinity);
-            return (
-              <div className="row" key={id}>
-                <div>
-                  <div>{UPGRADE_SHORT[id]}</div>
-                  <div className="lvl">
-                    {level}/{max}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="buy"
-                  disabled={!canBuy}
-                  onClick={() => onBuy(id)}
-                >
-                  {maxed ? "MAX" : String(cost)}
-                </button>
-              </div>
-            );
-          })}
-
-        {tab === "toys" && (
-          <>
-            <div className="row">
-              <div>
-                <div>MINION</div>
-                <div className="lvl">
-                  {minions}/{MINION_MAX} auto
-                </div>
-              </div>
-              <button
-                type="button"
-                className="buy"
-                disabled={minions >= MINION_MAX || snap.score < MINION_COST}
-                onClick={onHireMinion}
-              >
-                {minions >= MINION_MAX ? "MAX" : String(MINION_COST)}
-              </button>
-            </div>
-            {EXTRA_PADS.map((pad) => {
-              const owned = pads.some((p) => p.id === pad.id);
-              const hint = pads.find((p) => p.id === pad.id)?.lastLabel;
-              return (
-                <div className="row" key={pad.id}>
-                  <div>
-                    <div>{pad.name}</div>
-                    <div className="lvl">
-                      {owned
-                        ? hint ?? `${(pad.interval / 1000).toFixed(1)}s`
-                        : `${(pad.interval / 1000).toFixed(1)}s`}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="buy"
-                    disabled={owned || snap.score < pad.cost}
-                    onClick={() => onUnlockPad(pad.id)}
-                  >
-                    {owned ? "OWN" : String(pad.cost)}
-                  </button>
-                </div>
-              );
-            })}
-          </>
-        )}
-      </aside>
     </div>
   );
 }

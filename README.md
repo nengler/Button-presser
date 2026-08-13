@@ -46,7 +46,7 @@ Dependencies are kept minimal: **typescript** and **electron** only (both `devDe
 
 ## WebGL 2D prototype (R3F / CarverJS)
 
-The shipping game stays on a 320×180 canvas. A separate Vite app in `prototypes/webgl-2d` redraws the same `Game.ts` logic with a **React shop** and a **2D scene graph** for the world.
+The shipping game stays on a 320×180 canvas. A separate Vite app in `prototypes/webgl-2d` redraws the same `Game.ts` logic with a **pixel skill tree** (incremental-style gated nodes) and a **2D scene graph** for the world.
 
 ```bash
 npm run proto          # → http://localhost:5174
@@ -54,7 +54,7 @@ npm run proto          # → http://localhost:5174
 
 That split starts to pay off once the world is more than one ring:
 
-- **Shop** — React buttons at the same **320×180 integer scale** as the canvas game (chunky 8px type, 1px borders). Tabs: UPG / TOYS.
+- **Tree** — full-screen pixel upgrade graph (neon paths, locked/owned/selected). WARM unlocks MULT/FOCUS; those merge into MINION; minion unlocks extra pads. Repeatable nodes keep their levels.
 - **Particles** — burst on press (gold specks at the pad).
 - **Minions** — hire from the shop; they orbit a pad and hit leftover beats.
 - **Extra pads** — unlock PAD B / PAD C with their own timers; click the ring in the scene.

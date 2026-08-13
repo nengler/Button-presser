@@ -100,7 +100,7 @@ body,
 
 .gl {
   position: absolute;
-  inset: 0 112px 0 0;
+  inset: 0;
 }
 
 .gl canvas {
@@ -165,7 +165,7 @@ body,
 .feedback {
   position: absolute;
   left: 0;
-  width: 208px;
+  width: 320px;
   top: 108px;
   text-align: center;
   font-size: 9px;
@@ -222,48 +222,127 @@ body,
   text-align: center;
 }
 
-.shop {
+.tree-open {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 112px;
-  height: 100%;
-  background: var(--panel);
-  border-left: 1px solid var(--moss);
-  padding: 4px 6px 6px;
-  pointer-events: auto;
-  overflow: hidden;
-}
-
-.shop-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 12px;
-  margin-bottom: 2px;
-  font-size: 8px;
-  color: var(--foam);
-}
-
-.shop-tabs {
-  display: flex;
-  gap: 2px;
-  margin-bottom: 4px;
-}
-
-.shop-tabs button {
-  flex: 1;
+  right: 6px;
+  top: 4px;
+  width: 36px;
   height: 12px;
   padding: 0;
   background: var(--ink2);
-  color: var(--dim);
-  border: 1px solid var(--dim);
+  color: var(--foam);
+  border: 1px solid var(--sage);
 }
 
-.shop-tabs button.on {
+.tree-open:hover {
   background: var(--moss);
+}
+
+.tree {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #000;
+  pointer-events: auto;
+}
+
+.tree-head {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 3px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--foam);
-  border-color: var(--sage);
+}
+
+.tree-head .gold {
+  color: var(--gold-hot);
+  margin-left: auto;
+}
+
+.tree-back {
+  width: 36px;
+  height: 14px;
+  font-size: 7px;
+}
+
+.tree-map {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18px;
+  bottom: 32px;
+}
+
+.tree-wire {
+  position: absolute;
+  pointer-events: none;
+}
+
+.tree-node {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 2px solid #6b5340;
+  background: #050505;
+}
+
+.pix {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 8px;
+  height: 8px;
+}
+
+.pix i {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+}
+
+.tree-inspect {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  background: #080808;
+  border-top: 1px solid #3dff4a;
+}
+
+.tree-title {
+  font-size: 8px;
+  color: #e7f0e4;
+}
+
+.tree-blurb {
+  margin-top: 2px;
+  font-size: 6px;
+  color: #9bb59a;
+}
+
+.tree-buy {
+  width: auto;
+  min-width: 72px;
+  height: 22px;
+  padding: 0 6px;
+  font-size: 8px;
+}
+
+.tree button {
+  appearance: none;
+  border-radius: 0;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .reset {
@@ -278,34 +357,7 @@ body,
   color: var(--gold-hot);
 }
 
-.row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 26px;
-}
-
 .lvl {
   color: var(--sage);
   font-size: 6px;
-  margin-top: 2px;
-}
-
-.buy {
-  width: 36px;
-  height: 14px;
-  padding: 0;
-  background: var(--ink2);
-  color: var(--gold-hot);
-  border: 1px solid var(--gold);
-  font-size: 7px;
-}
-
-.buy:disabled {
-  color: var(--dim);
-  border-color: var(--dim);
-}
-
-.buy:not(:disabled):hover {
-  background: var(--moss);
 }

@@ -3,6 +3,7 @@ import { HEIGHT, WIDTH } from "../../../src/game/view.ts";
 import { CarverBeat } from "./CarverBeat.tsx";
 import { Hud } from "./Hud.tsx";
 import { R3FBeat } from "./R3FBeat.tsx";
+import { UpgradeTree } from "./UpgradeTree.tsx";
 import { useButtonPresser } from "./useButtonPresser.ts";
 import { useFutureToys } from "./useFutureToys.ts";
 import { usePixelScale } from "./usePixelScale.ts";
@@ -12,6 +13,7 @@ type Mode = "r3f" | "carver";
 
 export function App() {
   const [mode, setMode] = useState<Mode>("r3f");
+  const [treeOpen, setTreeOpen] = useState(false);
   const scale = usePixelScale();
   const { game, snap, pressFlashUntil, press, toggleRun, buy, reset } =
     useButtonPresser();
@@ -19,6 +21,11 @@ export function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.code === "Escape") {
+        setTreeOpen(false);
+        return;
+      }
+      if (treeOpen) return;
       if (e.code !== "Space" && e.key !== " ") return;
       e.preventDefault();
       if (!game.snapshot().running) {
@@ -29,14 +36,14 @@ export function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [game, toys.pressMainAndSpark]);
+  }, [game, toys.pressMainAndSpark, treeOpen]);
 
   return (
     <div className="page">
       <header className="bar">
         <strong>WebGL 2D prototype</strong>
         <span className="muted">
-          React shop · scene-graph pads / minions / sparks
+          React skill tree · pads / minions / sparks
         </span>
         <div className="tabs">
           <button
@@ -57,9 +64,8 @@ export function App() {
       </header>
 
       <p className="note">
-        Shop is React, but laid out at 320×180 and integer-scaled like the
-        canvas game so type and buttons stay chunky. Extra pads, minions, and
-        sparks live in the 2D scene.
+        Shop is a pixel skill tree (gated nodes, neon paths). Pads, minions,
+        and sparks live in the 2D scene.
       </p>
 
       <div
@@ -87,17 +93,24 @@ export function App() {
           <Hud
             snap={snap}
             pressFlashUntil={pressFlashUntil}
-            pads={toys.padUi}
-            minions={toys.minions}
             onToggle={toggleRun}
             onPress={toys.pressMainAndSpark}
-            onBuy={buy}
-            onReset={() => {
-              if (reset()) toys.resetToys();
-            }}
-            onHireMinion={toys.hireMinion}
-            onUnlockPad={toys.unlockPad}
+            onTree={() => setTreeOpen(true)}
           />
+          {treeOpen ? (
+            <UpgradeTree
+              snap={snap}
+              minions={toys.minions}
+              unlockedPads={toys.unlocked}
+              onBack={() => setTreeOpen(false)}
+              onBuyUpgrade={buy}
+              onHireMinion={toys.hireMinion}
+              onUnlockPad={toys.unlockPad}
+              onReset={() => {
+                if (reset()) toys.resetToys();
+              }}
+            />
+          ) : null}
         </div>
       </div>
     </div>
