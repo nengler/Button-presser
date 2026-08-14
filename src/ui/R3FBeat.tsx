@@ -1,5 +1,5 @@
 import { Canvas } from "@react-three/fiber";
-import { COLORS } from "../../../src/game/view.ts";
+import { COLORS } from "../game/view.ts";
 import { Playfield } from "./Playfield.tsx";
 import type { Burst, PadRuntime } from "./useFutureToys.ts";
 

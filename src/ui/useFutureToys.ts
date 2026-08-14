@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Game } from "../../../src/game/Game.ts";
-import { nearestBeatError, scorePress } from "../../../src/game/timing.ts";
+import type { Game } from "../game/Game.ts";
+import { nearestBeatError, scorePress } from "../game/timing.ts";
 import {
-  EXTRA_PADS,
   MAIN_STATION_ID,
-  MINION_COST,
-  MINION_MAX,
   padById,
-} from "./futureShop.ts";
+} from "../game/toys.ts";
 
 export type Burst = { nonce: number; x: number; y: number };
 
@@ -18,17 +15,10 @@ export type PadRuntime = {
 };
 
 export function useFutureToys(game: Game, pressMain: () => void) {
-  const [minions, setMinions] = useState(0);
-  const [unlocked, setUnlocked] = useState<string[]>([]);
   const [burst, setBurst] = useState<Burst>({ nonce: 0, x: 0, y: 0 });
   const [padUi, setPadUi] = useState<PadRuntime[]>([
     { id: MAIN_STATION_ID, phase: 0, lastLabel: null },
   ]);
-
-  const unlockedRef = useRef(unlocked);
-  unlockedRef.current = unlocked;
-  const minionsRef = useRef(minions);
-  minionsRef.current = minions;
 
   const origins = useRef<Record<string, number>>({});
   const used = useRef<Record<string, Set<number>>>({});
@@ -53,7 +43,7 @@ export function useFutureToys(game: Game, pressMain: () => void) {
         return;
       }
       if (!game.snapshot().running) return;
-      if (!unlockedRef.current.includes(id)) return;
+      if (!game.snapshot().unlockedPads.includes(id)) return;
 
       const pad = padById(id);
       const origin = origins.current[id] ?? now;
@@ -93,28 +83,20 @@ export function useFutureToys(game: Game, pressMain: () => void) {
   );
 
   const hireMinion = useCallback(() => {
-    if (minionsRef.current >= MINION_MAX) return;
-    if (!game.spendScore(MINION_COST)) return;
-    setMinions((n) => n + 1);
+    game.hireMinion();
   }, [game]);
 
   const unlockPad = useCallback(
     (id: string) => {
-      if (unlockedRef.current.includes(id)) return;
-      const pad = EXTRA_PADS.find((p) => p.id === id);
-      if (!pad) return;
-      if (!game.spendScore(pad.cost)) return;
+      if (!game.unlockPad(id)) return;
       origins.current[id] = performance.now();
       used.current[id] = new Set();
       streaks.current[id] = 0;
-      setUnlocked((ids) => [...ids, id]);
     },
     [game],
   );
 
   const resetToys = useCallback(() => {
-    setMinions(0);
-    setUnlocked([]);
     origins.current = {};
     used.current = {};
     streaks.current = {};
@@ -127,12 +109,14 @@ export function useFutureToys(game: Game, pressMain: () => void) {
     const tick = () => {
       const live = game.snapshot();
       const now = performance.now();
+      const unlocked = live.unlockedPads;
+      const minionCount = live.minions;
       if (live.running) {
-        for (const id of unlockedRef.current) {
+        for (const id of unlocked) {
           origins.current[id] ??= now;
         }
       }
-      const stations = [MAIN_STATION_ID, ...unlockedRef.current];
+      const stations = [MAIN_STATION_ID, ...unlocked];
 
       const nextUi: PadRuntime[] = stations.map((id) => {
         const pad = padById(id);
@@ -157,9 +141,9 @@ export function useFutureToys(game: Game, pressMain: () => void) {
         })),
       );
 
-      if (live.running && minionsRef.current > 0) {
+      if (live.running && minionCount > 0) {
         stations.forEach((id, i) => {
-          const assigned = [...Array(minionsRef.current).keys()].filter(
+          const assigned = [...Array(minionCount).keys()].filter(
             (m) => m % stations.length === i,
           );
           if (assigned.length === 0) return;
@@ -194,8 +178,6 @@ export function useFutureToys(game: Game, pressMain: () => void) {
   }, [game, pressMainAndSpark, pressPad]);
 
   return {
-    minions,
-    unlocked,
     burst,
     padUi,
     hireMinion,

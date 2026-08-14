@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Mesh } from "three";
-import { COLORS } from "../../../src/game/view.ts";
+import { COLORS } from "../game/view.ts";
 import type { Burst } from "./useFutureToys.ts";
 
 const POOL = 40;

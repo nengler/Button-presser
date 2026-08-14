@@ -1,6 +1,6 @@
-import { UPGRADE_DEFS } from "../../../src/game/upgrades.ts";
-import type { UpgradeId } from "../../../src/game/types.ts";
-import { EXTRA_PADS, MINION_COST, MINION_MAX } from "./futureShop.ts";
+import { UPGRADE_DEFS } from "../game/upgrades.ts";
+import type { UpgradeId } from "../game/types.ts";
+import { EXTRA_PADS, MINION_COST, MINION_MAX } from "../game/toys.ts";
 
 export const NODE = 16;
 

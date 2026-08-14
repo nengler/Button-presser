@@ -1,6 +1,6 @@
-import { COLORS } from "../../../src/game/view.ts";
+import { COLORS } from "../game/view.ts";
 
-/** Shared beat-ring meshes. Works inside any R3F canvas (raw or Carver `<Game>`). */
+/** Beat-ring meshes for the orthographic playfield. */
 export function BeatMeshes({
   phase,
   color = COLORS.gold,

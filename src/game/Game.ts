@@ -1,6 +1,7 @@
 import { loadSave, persistSave } from "./save.js";
 import { nearestBeatError, scorePress } from "./timing.js";
 import type { GameSave, PressResult, UpgradeId } from "./types.js";
+import { EXTRA_PADS, MINION_COST, MINION_MAX } from "./toys.js";
 import {
   UPGRADE_DEFS,
   intervalMs,
@@ -19,6 +20,8 @@ export interface GameSnapshot {
   upgrades: GameSave["upgrades"];
   upgradeCosts: Record<UpgradeId, number | null>;
   running: boolean;
+  minions: number;
+  unlockedPads: string[];
 }
 
 export class Game {
@@ -146,9 +149,31 @@ export class Game {
     return true;
   }
 
+  hireMinion(): boolean {
+    if (this.save.minions >= MINION_MAX) return false;
+    if (this.save.score < MINION_COST) return false;
+    this.save.score -= MINION_COST;
+    this.save.minions += 1;
+    this.persist();
+    this.emit();
+    return true;
+  }
+
+  unlockPad(id: string): boolean {
+    if (this.save.unlockedPads.includes(id)) return false;
+    const pad = EXTRA_PADS.find((p) => p.id === id);
+    if (!pad) return false;
+    if (this.save.score < pad.cost) return false;
+    this.save.score -= pad.cost;
+    this.save.unlockedPads = [...this.save.unlockedPads, id];
+    this.persist();
+    this.emit();
+    return true;
+  }
+
   resetProgress(): void {
     this.save = {
-      version: 1,
+      version: 2,
       score: 0,
       bestStreak: 0,
       upgrades: {
@@ -158,6 +183,8 @@ export class Game {
         combo: 0,
         warmup: 0,
       },
+      minions: 0,
+      unlockedPads: [],
     };
     this.streak = 0;
     this.lastResult = null;
@@ -191,6 +218,8 @@ export class Game {
       upgrades: { ...this.save.upgrades },
       upgradeCosts,
       running: this.running,
+      minions: this.save.minions,
+      unlockedPads: [...this.save.unlockedPads],
     };
   }
 

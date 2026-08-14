@@ -17,10 +17,12 @@ export interface UpgradeDef {
 }
 
 export interface GameSave {
-  version: 1;
+  version: 2;
   score: number;
   bestStreak: number;
   upgrades: Record<UpgradeId, number>;
+  minions: number;
+  unlockedPads: string[];
 }
 
 export interface PressResult {

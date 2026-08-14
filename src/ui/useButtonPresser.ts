@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Game } from "../../../src/game/Game.ts";
-import type { GameSnapshot } from "../../../src/game/Game.ts";
-import type { UpgradeId } from "../../../src/game/types.ts";
+import { Game } from "../game/Game.ts";
+import type { GameSnapshot } from "../game/Game.ts";
+import type { UpgradeId } from "../game/types.ts";
 
 export function useButtonPresser() {
   const game = useMemo(() => new Game(), []);

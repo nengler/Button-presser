@@ -3,17 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; style-src 'self'; script-src 'self'"
-    />
     <title>Button Presser</title>
-    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div id="frame">
-      <canvas id="game" width="320" height="180" aria-label="Button Presser"></canvas>
-    </div>
-    <script type="module" src="./dist/renderer.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

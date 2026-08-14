@@ -1,4 +1,4 @@
-import { COLORS } from "../../../src/game/view.ts";
+import { COLORS } from "../game/view.ts";
 
 function gradeColor(grade: string): string {
   switch (grade) {

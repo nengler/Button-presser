@@ -1,10 +1,10 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group } from "three";
-import { COLORS } from "../../../src/game/view.ts";
+import { COLORS } from "../game/view.ts";
 import { BeatMeshes } from "./BeatMeshes.tsx";
 import { SparkBurst } from "./SparkBurst.tsx";
-import { padById } from "./futureShop.ts";
+import { padById } from "../game/toys.ts";
 import type { Burst, PadRuntime } from "./useFutureToys.ts";
 
 function Minions({

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { GameSnapshot } from "../../../src/game/Game.ts";
-import type { UpgradeId } from "../../../src/game/types.ts";
+import type { GameSnapshot } from "../game/Game.ts";
+import type { UpgradeId } from "../game/types.ts";
 import {
   ICONS,
   NODE,

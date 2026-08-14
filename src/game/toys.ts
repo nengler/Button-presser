@@ -1,4 +1,4 @@
-import { COLORS } from "../../../src/game/view.ts";
+import { COLORS } from "./view.js";
 
 export const MAIN_STATION_ID = "main";
 
