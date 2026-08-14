@@ -35,17 +35,16 @@ WARM unlocks MULT and FOCUS. Those merge into MINION (helpers that hit leftover 
 
 ```
 src/
-  game/             # timing, upgrades, save, pads/minions
-  ui/               # pixel HUD, skill tree, canvas playfield
+  game/             # scoring, save, pads
+  ui/               # HUD, skill tree, canvas playfield
   App.tsx
   electron-main.ts
-index.html
 ```
 
 ## Extending
 
-- Add leveled upgrades in `src/game/upgrades.ts`.
-- Add tree nodes in `src/ui/upgradeTree.ts`.
-- Add a pad in `src/game/toys.ts` (`EXTRA_PADS`): stage-pixel `x`/`y`, color, timer, plus `treeX`/`treeY`, blurb, and an 8×8 `icon`. The playfield and skill tree pick it up.
-- Tune scoring in `src/game/timing.ts`.
-- Draw new playfield art with `fillDisc` / `fillRing` / `stampGlyph` in `src/ui/pixelDraw.ts` (coordinates are stage pixels, Y down).
+- Upgrades: `src/game/upgrades.ts`
+- Tree layout: `src/ui/upgradeTree.ts`
+- Pads: `src/game/pads.ts` (`EXTRA_PADS` — stage-pixel `x`/`y`, timer, tree slot, 8×8 `icon`)
+- Scoring: `src/game/timing.ts`
+- Playfield drawing: `src/ui/pixelDraw.ts` (stage pixels, Y down)

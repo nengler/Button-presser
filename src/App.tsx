@@ -3,17 +3,15 @@ import { HEIGHT, WIDTH } from "./game/view.ts";
 import { Hud } from "./ui/Hud.tsx";
 import { Playfield } from "./ui/Playfield.tsx";
 import { UpgradeTree } from "./ui/UpgradeTree.tsx";
-import { useButtonPresser } from "./ui/useButtonPresser.ts";
-import { useFutureToys } from "./ui/useFutureToys.ts";
+import { useGame } from "./ui/useGame.ts";
 import { usePixelScale } from "./ui/usePixelScale.ts";
 import "./ui/styles.css";
 
 export function App() {
   const [treeOpen, setTreeOpen] = useState(false);
   const scale = usePixelScale();
-  const { game, snap, pressFlashUntil, press, toggleRun, buy, reset } =
-    useButtonPresser();
-  const toys = useFutureToys(game, press);
+  const { game, snap, pressFlashUntil, pressMain, toggleRun, buyUpgrade, reset } =
+    useGame();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -24,50 +22,35 @@ export function App() {
       if (treeOpen) return;
       if (e.code !== "Space" && e.key !== " ") return;
       e.preventDefault();
-      if (!game.snapshot().running) {
-        game.start();
-        return;
-      }
-      toys.pressMainAndSpark();
+      if (!game.snapshot().running) game.start();
+      else pressMain();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [game, toys.pressMainAndSpark, treeOpen]);
+  }, [game, pressMain, treeOpen]);
 
   return (
     <div className="page">
-      <div
-        className="frame"
-        style={{ width: WIDTH * scale, height: HEIGHT * scale }}
-      >
+      <div className="frame" style={{ width: WIDTH * scale, height: HEIGHT * scale }}>
         <div className="stage" style={{ transform: `scale(${scale})` }}>
           <div className="playfield">
-            <Playfield
-              padsRef={toys.padsRef}
-              minionsRef={toys.minionsRef}
-              burstRef={toys.burstRef}
-              onPressPad={toys.pressPad}
-            />
+            <Playfield game={game} />
           </div>
           <Hud
             snap={snap}
             pressFlashUntil={pressFlashUntil}
             onToggle={toggleRun}
-            onPress={toys.pressMainAndSpark}
+            onPress={pressMain}
             onTree={() => setTreeOpen(true)}
           />
           {treeOpen ? (
             <UpgradeTree
               snap={snap}
-              minions={snap.minions}
-              unlockedPads={snap.unlockedPads}
               onBack={() => setTreeOpen(false)}
-              onBuyUpgrade={buy}
-              onHireMinion={toys.hireMinion}
-              onUnlockPad={toys.unlockPad}
-              onReset={() => {
-                if (reset()) toys.resetToys();
-              }}
+              onBuyUpgrade={buyUpgrade}
+              onHireMinion={() => game.hireMinion()}
+              onUnlockPad={(id) => game.unlockPad(id)}
+              onReset={reset}
             />
           ) : null}
         </div>

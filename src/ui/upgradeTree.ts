@@ -6,8 +6,9 @@ import {
   MINION_MAX,
   extraPadById,
   isExtraPadId,
-} from "../game/toys.ts";
-import type { ExtraPadId, Glyph } from "../game/toys.ts";
+  type ExtraPadId,
+  type Glyph,
+} from "../game/pads.ts";
 
 export const NODE = 16;
 

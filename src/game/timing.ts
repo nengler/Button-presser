@@ -13,8 +13,7 @@ const GRADE_THRESHOLDS = {
 } as const;
 
 /**
- * Score a press against the nearest beat.
- * Closer absolute error → higher points (0 on miss).
+ * Score a press against the nearest beat. Closer absolute error → more points.
  */
 export function scorePress(opts: {
   errorMs: number;
@@ -39,7 +38,6 @@ export function scorePress(opts: {
   }
 
   const closeness = 1 - ratio;
-  // Emphasize near-perfect hits.
   const curve = Math.pow(closeness, 1.35);
   const base = 10 + curve * 90;
   const streak = opts.streakBefore + 1;

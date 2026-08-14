@@ -1,11 +1,9 @@
 import { COLORS } from "./view.ts";
 
-export const MAIN_STATION_ID = "main";
-
 export const MINION_COST = 80;
 export const MINION_MAX = 4;
 
-/** 8×8 glyph: `X` is on, `.` is off. */
+/** 8×8 glyph: `X` on, `.` off. */
 export type Glyph = readonly string[];
 
 export type PadDef = {
@@ -27,7 +25,7 @@ export type ExtraPadDef = PadDef & {
 };
 
 export const MAIN_PAD: PadDef = {
-  id: MAIN_STATION_ID,
+  id: "main",
   name: "PAD A",
   interval: 1000,
   cost: 0,
@@ -36,7 +34,7 @@ export const MAIN_PAD: PadDef = {
   color: COLORS.gold,
 };
 
-/** Extra pads: playfield, unlocks, and skill-tree slots all read this list. */
+/** Playfield, unlocks, and skill tree all read this list. */
 export const EXTRA_PADS = [
   {
     id: "pad-b",
@@ -86,7 +84,7 @@ export const EXTRA_PADS = [
 
 export type ExtraPadId = (typeof EXTRA_PADS)[number]["id"];
 
-const PADS_BY_ID = new Map<string, PadDef>([
+const BY_ID = new Map<string, PadDef>([
   [MAIN_PAD.id, MAIN_PAD],
   ...EXTRA_PADS.map((p) => [p.id, p] as const),
 ]);
@@ -100,7 +98,7 @@ export function isExtraPadId(id: string): id is ExtraPadId {
 }
 
 export function padById(id: string): PadDef {
-  return PADS_BY_ID.get(id) ?? MAIN_PAD;
+  return BY_ID.get(id) ?? MAIN_PAD;
 }
 
 export function minionsOnStation(

@@ -5,15 +5,11 @@ function hexRgb(hex: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-/** Blend `fg` over the ink backdrop. Keeps pulse discs on the pixel grid. */
 export function fadeOnInk(fg: string, alpha: number): string {
   const t = Math.max(0, Math.min(1, alpha));
-  const [fr, fgG, fb] = hexRgb(fg);
-  const [br, bg, bb] = hexRgb(COLORS.ink);
-  const r = Math.round(fr * t + br * (1 - t));
-  const g = Math.round(fgG * t + bg * (1 - t));
-  const b = Math.round(fb * t + bb * (1 - t));
-  return `rgb(${r},${g},${b})`;
+  const [r, g, b] = hexRgb(fg);
+  const [ir, ig, ib] = hexRgb(COLORS.ink);
+  return `rgb(${Math.round(r * t + ir * (1 - t))},${Math.round(g * t + ig * (1 - t))},${Math.round(b * t + ib * (1 - t))})`;
 }
 
 export function fillDisc(
@@ -33,6 +29,21 @@ export function fillDisc(
   }
 }
 
+function eachRingPixel(
+  rInner: number,
+  rOuter: number,
+  fn: (x: number, y: number) => void,
+): void {
+  const inner2 = rInner * rInner;
+  const outer2 = rOuter * rOuter;
+  for (let y = -rOuter; y <= rOuter; y++) {
+    for (let x = -rOuter; x <= rOuter; x++) {
+      const d2 = x * x + y * y;
+      if (d2 <= outer2 && d2 >= inner2) fn(x, y);
+    }
+  }
+}
+
 export function fillRing(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -40,17 +51,10 @@ export function fillRing(
   rInner: number,
   rOuter: number,
 ): void {
-  const inner2 = rInner * rInner;
-  const outer2 = rOuter * rOuter;
-  for (let y = -rOuter; y <= rOuter; y++) {
-    for (let x = -rOuter; x <= rOuter; x++) {
-      const d2 = x * x + y * y;
-      if (d2 <= outer2 && d2 >= inner2) ctx.fillRect(cx + x, cy + y, 1, 1);
-    }
-  }
+  eachRingPixel(rInner, rOuter, (x, y) => ctx.fillRect(cx + x, cy + y, 1, 1));
 }
 
-/** Sweep from 6 o'clock toward 3 o'clock, then up. `sweep` is radians, 0–2π. */
+/** Sweep from 6 o'clock toward 3 o'clock. `sweep` is 0–2π radians. */
 export function fillSweepRing(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -62,32 +66,9 @@ export function fillSweepRing(
   const tau = Math.PI * 2;
   const span = Math.max(0, Math.min(tau, sweep));
   if (span <= 0) return;
-  const inner2 = rInner * rInner;
-  const outer2 = rOuter * rOuter;
-  for (let y = -rOuter; y <= rOuter; y++) {
-    for (let x = -rOuter; x <= rOuter; x++) {
-      const d2 = x * x + y * y;
-      if (d2 > outer2 || d2 < inner2) continue;
-      let fromBottom = Math.PI / 2 - Math.atan2(y, x);
-      if (fromBottom < 0) fromBottom += tau;
-      if (fromBottom <= span) ctx.fillRect(cx + x, cy + y, 1, 1);
-    }
-  }
-}
-
-/** Stamp an 8×8 `X`/`.` glyph at stage pixels `(x, y)`. */
-export function stampGlyph(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  rows: readonly string[],
-  color: string,
-): void {
-  ctx.fillStyle = color;
-  for (let row = 0; row < rows.length; row++) {
-    const line = rows[row]!;
-    for (let col = 0; col < line.length; col++) {
-      if (line[col] === "X") ctx.fillRect(x + col, y + row, 1, 1);
-    }
-  }
+  eachRingPixel(rInner, rOuter, (x, y) => {
+    let fromBottom = Math.PI / 2 - Math.atan2(y, x);
+    if (fromBottom < 0) fromBottom += tau;
+    if (fromBottom <= span) ctx.fillRect(cx + x, cy + y, 1, 1);
+  });
 }

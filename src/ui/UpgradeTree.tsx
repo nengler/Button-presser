@@ -9,7 +9,7 @@ import {
   parentsOwned,
 } from "./upgradeTree.ts";
 import type { TreeNodeId } from "./upgradeTree.ts";
-import { isExtraPadId } from "../game/toys.ts";
+import { isExtraPadId } from "../game/pads.ts";
 
 const LINE = "#3dff4a";
 const LOCK = "#6b5340";
@@ -56,8 +56,6 @@ function elbow(
 
 export function UpgradeTree({
   snap,
-  minions,
-  unlockedPads,
   onBack,
   onBuyUpgrade,
   onHireMinion,
@@ -65,8 +63,6 @@ export function UpgradeTree({
   onReset,
 }: {
   snap: GameSnapshot;
-  minions: number;
-  unlockedPads: string[];
   onBack: () => void;
   onBuyUpgrade: (id: UpgradeId) => void;
   onHireMinion: () => void;
@@ -76,7 +72,7 @@ export function UpgradeTree({
   const progress = Object.fromEntries(
     TREE_NODES.map((n) => [
       n.id,
-      nodeProgress(n.id, snap.upgrades, minions, unlockedPads),
+      nodeProgress(n.id, snap.upgrades, snap.minions, snap.unlockedPads),
     ]),
   ) as Record<TreeNodeId, ReturnType<typeof nodeProgress>>;
 
