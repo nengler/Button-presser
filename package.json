@@ -4,18 +4,32 @@
   "private": true,
   "description": "A timing game — press every second. Closer means more points.",
   "type": "module",
-  "main": "dist/electron-main.js",
+  "main": "dist-electron/electron-main.js",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch",
-    "start": "npm run build && node scripts/serve.mjs",
+    "dev": "vite",
+    "start": "vite",
+    "build": "tsc --noEmit && tsc -p tsconfig.electron.json && vite build",
+    "watch": "vite",
     "electron": "npm run build && electron .",
-    "clean": "rm -rf dist",
-    "smoke": "npm run build && node scripts/smoke.mjs"
+    "preview": "vite preview",
+    "clean": "rm -rf dist dist-electron",
+    "smoke": "tsx scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^9.5.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "three": "^0.183.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.183.1",
+    "@vitejs/plugin-react": "^4.7.0",
     "electron": "^37.2.0",
-    "typescript": "^5.8.3"
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
   }
 }

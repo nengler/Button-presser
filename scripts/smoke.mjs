@@ -2,8 +2,8 @@
  * Zero-dep smoke checks for timing/scoring (run: node --experimental-strip-types won't work on compiled).
  * Prefer: npm run build && node scripts/smoke.mjs
  */
-import { nearestBeatError, scorePress } from "../dist/game/timing.js";
-import { windowMs } from "../dist/game/upgrades.js";
+import { nearestBeatError, scorePress } from "../src/game/timing.ts";
+import { windowMs } from "../src/game/upgrades.ts";
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);

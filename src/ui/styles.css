@@ -1,0 +1,324 @@
+:root {
+  --ink: #14201c;
+  --ink2: #1c2c26;
+  --panel: #18241f;
+  --moss: #3d5c4a;
+  --sage: #9bb59a;
+  --foam: #e7f0e4;
+  --gold: #d4a24c;
+  --gold-hot: #f0c56d;
+  --dim: #5a7364;
+  --letterbox: #0a100e;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--letterbox);
+  color: var(--foam);
+  font-family: ui-monospace, "Courier New", monospace;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.page {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.frame {
+  display: grid;
+  place-items: center;
+}
+
+.stage {
+  position: relative;
+  width: 320px;
+  height: 180px;
+  background: var(--ink);
+  overflow: hidden;
+  transform-origin: 0 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
+  font-smooth: never;
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 8px;
+  line-height: 1;
+  user-select: none;
+}
+
+.gl {
+  position: absolute;
+  inset: 0;
+}
+
+.gl canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud button {
+  pointer-events: auto;
+  appearance: none;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: 8px;
+  line-height: 1;
+  cursor: pointer;
+  image-rendering: pixelated;
+}
+
+.brand {
+  position: absolute;
+  left: 8px;
+  top: 6px;
+}
+
+.title {
+  font-size: 10px;
+  color: var(--foam);
+}
+
+.tag {
+  color: var(--sage);
+  font-size: 7px;
+  margin-top: 2px;
+}
+
+.stats {
+  position: absolute;
+  left: 8px;
+  top: 34px;
+  display: flex;
+  gap: 10px;
+  font-size: 8px;
+}
+
+.stats .gold {
+  color: var(--gold-hot);
+}
+
+.stats .sage {
+  color: var(--sage);
+}
+
+.feedback {
+  position: absolute;
+  left: 0;
+  width: 320px;
+  top: 108px;
+  text-align: center;
+  font-size: 9px;
+}
+
+.feedback .err {
+  color: var(--dim);
+  font-size: 7px;
+  margin-top: 2px;
+}
+
+.controls {
+  position: absolute;
+  left: 8px;
+  top: 128px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn {
+  background: var(--ink2);
+  color: var(--foam);
+  border: 1px solid var(--sage);
+  width: 44px;
+  height: 22px;
+  padding: 0;
+}
+
+.btn.press {
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+  width: 84px;
+  font-size: 10px;
+}
+
+.btn.press:disabled {
+  background: var(--ink2);
+  color: var(--dim);
+}
+
+.btn.press.flash {
+  background: var(--gold-hot);
+}
+
+.hint {
+  position: absolute;
+  left: 50px;
+  top: 26px;
+  color: var(--dim);
+  font-size: 6px;
+  width: 90px;
+  text-align: center;
+}
+
+.tree-open {
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  width: 36px;
+  height: 12px;
+  padding: 0;
+  background: var(--ink2);
+  color: var(--foam);
+  border: 1px solid var(--sage);
+}
+
+.tree-open:hover {
+  background: var(--moss);
+}
+
+.tree {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #000;
+  pointer-events: auto;
+}
+
+.tree-head {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 3px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--foam);
+}
+
+.tree-head .gold {
+  color: var(--gold-hot);
+  margin-left: auto;
+}
+
+.tree-back {
+  width: 36px;
+  height: 14px;
+  font-size: 7px;
+}
+
+.tree-map {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18px;
+  bottom: 32px;
+}
+
+.tree-wire {
+  position: absolute;
+  pointer-events: none;
+}
+
+.tree-node {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 2px solid #6b5340;
+  background: #050505;
+}
+
+.pix {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 8px;
+  height: 8px;
+}
+
+.pix i {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+}
+
+.tree-inspect {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  background: #080808;
+  border-top: 1px solid #3dff4a;
+}
+
+.tree-title {
+  font-size: 8px;
+  color: #e7f0e4;
+}
+
+.tree-blurb {
+  margin-top: 2px;
+  font-size: 6px;
+  color: #9bb59a;
+}
+
+.tree-buy {
+  width: auto;
+  min-width: 72px;
+  height: 22px;
+  padding: 0 6px;
+  font-size: 8px;
+}
+
+.tree button {
+  appearance: none;
+  border-radius: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.reset {
+  background: none;
+  border: none;
+  color: var(--dim);
+  padding: 0;
+  height: 12px;
+}
+
+.reset:hover {
+  color: var(--gold-hot);
+}
+
+.lvl {
+  color: var(--sage);
+  font-size: 6px;
+}
