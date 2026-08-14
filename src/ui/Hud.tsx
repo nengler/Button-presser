@@ -1,3 +1,4 @@
+import type { GameSnapshot } from "../game/Game.ts";
 import { COLORS } from "../game/view.ts";
 
 function gradeColor(grade: string): string {
@@ -24,36 +25,21 @@ export function Hud({
   onPress,
   onTree,
 }: {
-  snap: {
-    score: number;
-    streak: number;
-    bestStreak: number;
-    running: boolean;
-    lastResult: {
-      grade: string;
-      points: number;
-      errorMs: number;
-    } | null;
-  };
+  snap: GameSnapshot;
   pressFlashUntil: number;
   onToggle: () => void;
   onPress: () => void;
   onTree: () => void;
 }) {
   const flashing = snap.running && performance.now() < pressFlashUntil;
-  const feedback = snap.lastResult
-    ? snap.lastResult.grade === "miss"
+  const result = snap.lastResult;
+  const feedback = result
+    ? result.grade === "miss"
       ? "MISS"
-      : `+${snap.lastResult.points} ${snap.lastResult.grade.toUpperCase()}`
+      : `+${result.points} ${result.grade.toUpperCase()}`
     : snap.running
       ? "..."
       : "ready";
-  const feedbackColor = snap.lastResult
-    ? gradeColor(snap.lastResult.grade)
-    : COLORS.sage;
-  const err = snap.lastResult
-    ? `${snap.lastResult.errorMs > 0 ? "+" : ""}${snap.lastResult.errorMs.toFixed(0)}ms`
-    : null;
 
   return (
     <div className="hud">
@@ -73,8 +59,15 @@ export function Hud({
       </div>
 
       <div className="feedback">
-        <div style={{ color: feedbackColor }}>{feedback}</div>
-        {err ? <div className="err">{err}</div> : null}
+        <div style={{ color: result ? gradeColor(result.grade) : COLORS.sage }}>
+          {feedback}
+        </div>
+        {result ? (
+          <div className="err">
+            {result.errorMs > 0 ? "+" : ""}
+            {result.errorMs.toFixed(0)}ms
+          </div>
+        ) : null}
       </div>
 
       <div className="controls">

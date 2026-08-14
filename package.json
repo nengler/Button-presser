@@ -16,16 +16,13 @@
     "smoke": "tsx scripts/smoke.mjs"
   },
   "dependencies": {
-    "@react-three/fiber": "^9.5.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "three": "^0.183.1"
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.183.1",
     "@vitejs/plugin-react": "^4.7.0",
     "electron": "^37.2.0",
     "tsx": "^4.20.3",

@@ -1,11 +1,19 @@
 import { UPGRADE_DEFS } from "../game/upgrades.ts";
 import type { UpgradeId } from "../game/types.ts";
-import { EXTRA_PADS, MINION_COST, MINION_MAX } from "../game/toys.ts";
+import {
+  EXTRA_PADS,
+  MINION_COST,
+  MINION_MAX,
+  extraPadById,
+  isExtraPadId,
+  type ExtraPadId,
+  type Glyph,
+} from "../game/pads.ts";
 
 export const NODE = 16;
 
 /** 8×8 glyphs: X = on, . = off */
-export const ICONS: Record<string, string[]> = {
+export const ICONS: Record<string, Glyph> = {
   warmup: [
     "........",
     "...XX...",
@@ -66,29 +74,10 @@ export const ICONS: Record<string, string[]> = {
     ".XX..XX.",
     "........",
   ],
-  "pad-b": [
-    "........",
-    ".XXXXXX.",
-    ".X....X.",
-    ".X.XX.X.",
-    ".X.XX.X.",
-    ".X....X.",
-    ".XXXXXX.",
-    "........",
-  ],
-  "pad-c": [
-    "........",
-    ".XXXX...",
-    ".X..X...",
-    ".XXXX.XX",
-    "......X.",
-    "...XXXX.",
-    "...X..X.",
-    "...XXXX.",
-  ],
+  ...Object.fromEntries(EXTRA_PADS.map((p) => [p.id, p.icon])),
 };
 
-export type TreeNodeId = UpgradeId | "minion" | "pad-b" | "pad-c";
+export type TreeNodeId = UpgradeId | "minion" | ExtraPadId;
 
 export type TreeNode = {
   id: TreeNodeId;
@@ -99,8 +88,7 @@ export type TreeNode = {
   blurb: string;
 };
 
-/** Bottom roots → top/right advanced, with a merge into minion. */
-export const TREE_NODES: TreeNode[] = [
+const UPGRADE_NODES: TreeNode[] = [
   {
     id: "warmup",
     x: 20,
@@ -149,22 +137,19 @@ export const TREE_NODES: TreeNode[] = [
     title: "MINION",
     blurb: "Hires a helper on leftover beats",
   },
-  {
-    id: "pad-b",
-    x: 212,
-    y: 8,
-    parents: ["minion"],
-    title: "PAD B",
-    blurb: "Extra pad, 1.4s timer",
-  },
-  {
-    id: "pad-c",
-    x: 276,
-    y: 48,
-    parents: ["minion"],
-    title: "PAD C",
-    blurb: "Extra pad, 0.7s timer",
-  },
+];
+
+/** Bottom roots → top/right advanced, with a merge into minion. */
+export const TREE_NODES: TreeNode[] = [
+  ...UPGRADE_NODES,
+  ...EXTRA_PADS.map((pad) => ({
+    id: pad.id,
+    x: pad.treeX,
+    y: pad.treeY,
+    parents: ["minion"] as TreeNodeId[],
+    title: pad.name,
+    blurb: pad.blurb,
+  })),
 ];
 
 export type NodeProgress = {
@@ -190,8 +175,8 @@ export function nodeProgress(
       maxed: minions >= MINION_MAX,
     };
   }
-  if (id === "pad-b" || id === "pad-c") {
-    const pad = EXTRA_PADS.find((p) => p.id === id)!;
+  if (isExtraPadId(id)) {
+    const pad = extraPadById(id)!;
     const owned = unlockedPads.includes(id);
     return {
       level: owned ? 1 : 0,

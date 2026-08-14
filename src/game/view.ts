@@ -1,4 +1,4 @@
-/** Internal render resolution (16:9). */
+/** Internal render resolution (16:9). Draw here; the stage integer-scales it. */
 export const WIDTH = 320;
 export const HEIGHT = 180;
 

@@ -2,7 +2,7 @@
 
 A TypeScript timing game for the **browser** and **Electron**.
 
-The UI is a **320×180** pixel stage (16:9), integer-scaled to the window. Pads and sparks render in WebGL (React Three Fiber, orthographic). The HUD and upgrade tree are React, painted at 8px and scaled up so they stay chunky.
+The UI is a **320×180** pixel stage (16:9), integer-scaled to the window. Pads and sparks draw on a 2D canvas (`requestAnimationFrame` + delta time). The HUD and upgrade tree are React, painted at 8px and scaled up so they stay chunky.
 
 Press on every beat (about once per second). The closer you are to the exact beat, the more points you earn. Spend points on a skill tree as you go.
 
@@ -35,16 +35,16 @@ WARM unlocks MULT and FOCUS. Those merge into MINION (helpers that hit leftover 
 
 ```
 src/
-  game/             # timing, upgrades, save, pads/minions
-  ui/               # pixel HUD, skill tree, R3F playfield
+  game/             # scoring, save, pads
+  ui/               # HUD, skill tree, canvas playfield
   App.tsx
   electron-main.ts
-index.html
 ```
 
 ## Extending
 
-- Add leveled upgrades in `src/game/upgrades.ts`.
-- Add tree nodes in `src/ui/upgradeTree.ts`.
-- Add pads in `src/game/toys.ts`.
-- Tune scoring in `src/game/timing.ts`.
+- Upgrades: `src/game/upgrades.ts`
+- Tree layout: `src/ui/upgradeTree.ts`
+- Pads: `src/game/pads.ts` (`EXTRA_PADS` — stage-pixel `x`/`y`, timer, tree slot, 8×8 `icon`)
+- Scoring: `src/game/timing.ts`
+- Playfield drawing: `src/ui/pixelDraw.ts` (stage pixels, Y down)

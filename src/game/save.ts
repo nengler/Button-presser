@@ -1,5 +1,5 @@
-import type { GameSave } from "./types.js";
-import { emptyUpgrades } from "./upgrades.js";
+import type { GameSave } from "./types.ts";
+import { emptyUpgrades } from "./upgrades.ts";
 
 const SAVE_KEY = "button-presser-save-v1";
 

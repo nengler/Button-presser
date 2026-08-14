@@ -1,4 +1,4 @@
-import type { UpgradeDef, UpgradeId } from "./types.js";
+import type { UpgradeDef, UpgradeId } from "./types.ts";
 
 export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
   multiplier: {

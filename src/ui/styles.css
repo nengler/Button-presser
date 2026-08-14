@@ -48,8 +48,8 @@ body,
   background: var(--ink);
   overflow: hidden;
   transform-origin: 0 0;
-  image-rendering: pixelated;
   image-rendering: crisp-edges;
+  image-rendering: pixelated;
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: unset;
   font-smooth: never;
@@ -59,17 +59,17 @@ body,
   user-select: none;
 }
 
-.gl {
+.playfield {
   position: absolute;
   inset: 0;
 }
 
-.gl canvas {
+.playfield canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
-  image-rendering: pixelated;
   image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .hud {
