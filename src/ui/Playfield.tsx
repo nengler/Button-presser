@@ -1,15 +1,20 @@
 import { useEffect, useRef } from "react";
 import { padById } from "../game/toys.ts";
-import { COLORS, HEIGHT, WIDTH } from "../game/view.ts";
+import { COLORS, HEIGHT, PX, WIDTH } from "../game/view.ts";
 import type { Burst, PadRuntime } from "./useFutureToys.ts";
+import { fadeOnInk, fillDisc, fillRing, fillSweepRing } from "./pixelDraw.ts";
 
-/** Matches the old R3F orthographic `camera.zoom`. */
-const ZOOM = 36;
 const HIT_R = 1.2;
 const SPARK_POOL = 40;
 const MINION_ORBIT = 1.38;
 const MINION_SPIN = 0.85;
 const MAX_DT = 0.05;
+
+const MOSS_IN = Math.round(0.88 * PX);
+const MOSS_OUT = Math.round(0.94 * PX);
+const SWEEP_IN = Math.round(0.98 * PX);
+const SWEEP_OUT = Math.round(1.06 * PX);
+const MINION_R = Math.max(1, Math.round(0.11 * PX));
 
 type Speck = {
   x: number;
@@ -20,15 +25,21 @@ type Speck = {
   max: number;
 };
 
-function worldToScreen(x: number, y: number): [number, number] {
-  return [WIDTH / 2 + x * ZOOM, HEIGHT / 2 - y * ZOOM];
+function toScreen(x: number, y: number): { x: number; y: number } {
+  return {
+    x: Math.round(WIDTH / 2 + x * PX),
+    y: Math.round(HEIGHT / 2 - y * PX),
+  };
 }
 
-function screenToWorld(sx: number, sy: number): [number, number] {
-  return [(sx - WIDTH / 2) / ZOOM, (HEIGHT / 2 - sy) / ZOOM];
+function toWorld(sx: number, sy: number): { x: number; y: number } {
+  return {
+    x: (sx - WIDTH / 2) / PX,
+    y: (HEIGHT / 2 - sy) / PX,
+  };
 }
 
-function eventToStage(canvas: HTMLCanvasElement, e: PointerEvent | MouseEvent) {
+function eventToStage(canvas: HTMLCanvasElement, e: PointerEvent) {
   const rect = canvas.getBoundingClientRect();
   return {
     x: ((e.clientX - rect.left) / rect.width) * WIDTH,
@@ -37,7 +48,7 @@ function eventToStage(canvas: HTMLCanvasElement, e: PointerEvent | MouseEvent) {
 }
 
 function hitPad(pads: PadRuntime[], sx: number, sy: number): string | null {
-  const [wx, wy] = screenToWorld(sx, sy);
+  const { x: wx, y: wy } = toWorld(sx, sy);
   let best: { id: string; d2: number } | null = null;
   const r2 = HIT_R * HIT_R;
   for (const pad of pads) {
@@ -51,6 +62,11 @@ function hitPad(pads: PadRuntime[], sx: number, sy: number): string | null {
   return best?.id ?? null;
 }
 
+function minionsOnStation(minions: number, index: number, stations: number): number {
+  if (stations <= 0) return 0;
+  return Math.floor(minions / stations) + (index < minions % stations ? 1 : 0);
+}
+
 function drawBeat(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -60,43 +76,22 @@ function drawBeat(
 ) {
   const dist = Math.min(phase, 1 - phase);
   const near = 1 - dist * 2;
-  const pulseR = (0.7 + near * 0.25) * ZOOM;
-  const pipR = (0.08 + near * 0.1) * ZOOM;
+  const pulseR = Math.round(0.7 * PX + near * 0.25 * PX);
+  const pipR = Math.max(1, Math.round(0.08 * PX + near * 0.1 * PX));
   const sweep = Math.max(0.001, phase * Math.PI * 2);
   const pulseOpacity = 0.08 + near * 0.22;
 
-  ctx.globalAlpha = pulseOpacity;
+  ctx.fillStyle = fadeOnInk(color, pulseOpacity);
+  fillDisc(ctx, cx, cy, pulseR);
+
+  ctx.fillStyle = COLORS.moss;
+  fillRing(ctx, cx, cy, MOSS_IN, MOSS_OUT);
+
   ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(cx, cy, pulseR, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
-
-  ctx.strokeStyle = COLORS.moss;
-  ctx.lineWidth = (0.94 - 0.88) * ZOOM;
-  ctx.beginPath();
-  ctx.arc(cx, cy, ((0.88 + 0.94) / 2) * ZOOM, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Three.js ring theta is CCW from -π/2 (bottom in Y-up). Canvas Y is down, so
-  // start at +π/2 (bottom) and sweep CCW.
-  ctx.strokeStyle = color;
-  ctx.lineWidth = (1.06 - 0.98) * ZOOM;
-  ctx.beginPath();
-  ctx.arc(
-    cx,
-    cy,
-    ((0.98 + 1.06) / 2) * ZOOM,
-    Math.PI / 2,
-    Math.PI / 2 - sweep,
-    true,
-  );
-  ctx.stroke();
+  fillSweepRing(ctx, cx, cy, SWEEP_IN, SWEEP_OUT, sweep);
 
   ctx.fillStyle = COLORS.goldHot;
-  ctx.beginPath();
-  ctx.arc(cx, cy, pipR, 0, Math.PI * 2);
-  ctx.fill();
+  fillDisc(ctx, cx, cy, pipR);
 }
 
 function spawnSparks(specks: Speck[], burst: Burst) {
@@ -150,8 +145,10 @@ export function Playfield({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
+    const ctx = canvas?.getContext("2d", { alpha: false });
     if (!canvas || !ctx) return;
+
+    ctx.imageSmoothingEnabled = false;
 
     const specks: Speck[] = [];
     let lastNonce = 0;
@@ -171,16 +168,14 @@ export function Playfield({
       }
       stepSparks(specks, dt);
 
-      ctx.imageSmoothingEnabled = false;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = COLORS.ink;
       ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
       const livePads = padsRef.current;
       for (const pad of livePads) {
         const def = padById(pad.id);
-        const [cx, cy] = worldToScreen(def.x, def.y);
-        drawBeat(ctx, cx, cy, pad.phase, def.color);
+        const { x, y } = toScreen(def.x, def.y);
+        drawBeat(ctx, x, y, pad.phase, def.color);
       }
 
       const stations = livePads.map((p) => p.id);
@@ -188,29 +183,24 @@ export function Playfield({
       const minionCount = minionsRef.current;
       ctx.fillStyle = COLORS.foam;
       for (let i = 0; i < stations.length; i++) {
-        const assigned = [...Array(minionCount).keys()].filter((m) => m % n === i)
-          .length;
+        const assigned = minionsOnStation(minionCount, i, n);
         if (assigned === 0) continue;
         const pad = padById(stations[i]!);
         for (let m = 0; m < assigned; m++) {
           const angle = (m / assigned) * Math.PI * 2 + elapsed * MINION_SPIN;
-          const [mx, my] = worldToScreen(
+          const { x, y } = toScreen(
             pad.x + Math.cos(angle) * MINION_ORBIT,
             pad.y + Math.sin(angle) * MINION_ORBIT,
           );
-          ctx.beginPath();
-          ctx.arc(mx, my, 0.11 * ZOOM, 0, Math.PI * 2);
-          ctx.fill();
+          fillDisc(ctx, x, y, MINION_R);
         }
       }
 
       ctx.fillStyle = COLORS.goldHot;
       for (const p of specks) {
-        const [sx, sy] = worldToScreen(p.x, p.y);
-        const r = (0.04 + p.life * 0.08) * ZOOM;
-        ctx.beginPath();
-        ctx.arc(sx, sy, r, 0, Math.PI * 2);
-        ctx.fill();
+        const { x, y } = toScreen(p.x, p.y);
+        const r = Math.max(1, Math.round((0.04 + p.life * 0.08) * PX));
+        fillDisc(ctx, x, y, r);
       }
 
       raf = requestAnimationFrame(tick);
@@ -220,27 +210,30 @@ export function Playfield({
     return () => cancelAnimationFrame(raf);
   }, []);
 
+  const pointOnPad = (e: PointerEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const { x, y } = eventToStage(canvas, e);
+    return hitPad(padsRef.current, x, y);
+  };
+
   return (
     <canvas
       ref={canvasRef}
       width={WIDTH}
       height={HEIGHT}
-      onClick={(e) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const { x, y } = eventToStage(canvas, e.nativeEvent);
-        const id = hitPad(padsRef.current, x, y);
+      onPointerDown={(e) => {
+        const id = pointOnPad(e.nativeEvent);
         if (id) onPressRef.current(id);
       }}
       onPointerMove={(e) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const { x, y } = eventToStage(canvas, e.nativeEvent);
-        const id = hitPad(padsRef.current, x, y);
-        document.body.style.cursor = id ? "pointer" : "default";
+        canvas.style.cursor = pointOnPad(e.nativeEvent) ? "pointer" : "default";
       }}
       onPointerLeave={() => {
-        document.body.style.cursor = "default";
+        const canvas = canvasRef.current;
+        if (canvas) canvas.style.cursor = "default";
       }}
     />
   );
