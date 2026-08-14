@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Game } from "../game/Game.ts";
 import type { GameSnapshot } from "../game/Game.ts";
 import type { UpgradeId } from "../game/types.ts";
@@ -7,23 +7,22 @@ export function useButtonPresser() {
   const game = useMemo(() => new Game(), []);
   const [snap, setSnap] = useState<GameSnapshot>(() => game.snapshot());
   const [pressFlashUntil, setPressFlashUntil] = useState(0);
+  const flashTimer = useRef(0);
 
   useEffect(() => game.subscribe(setSnap), [game]);
-
-  useEffect(() => {
-    let id = 0;
-    const tick = () => {
-      setSnap(game.snapshot());
-      id = requestAnimationFrame(tick);
-    };
-    id = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(id);
-  }, [game]);
+  useEffect(
+    () => () => {
+      window.clearTimeout(flashTimer.current);
+    },
+    [],
+  );
 
   const press = useCallback(() => {
     if (!game.snapshot().running) return;
     game.press();
+    window.clearTimeout(flashTimer.current);
     setPressFlashUntil(performance.now() + 120);
+    flashTimer.current = window.setTimeout(() => setPressFlashUntil(0), 120);
   }, [game]);
 
   const toggleRun = useCallback(() => {

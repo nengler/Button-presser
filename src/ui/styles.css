@@ -59,12 +59,12 @@ body,
   user-select: none;
 }
 
-.gl {
+.playfield {
   position: absolute;
   inset: 0;
 }
 
-.gl canvas {
+.playfield canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;

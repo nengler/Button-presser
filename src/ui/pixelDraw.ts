@@ -50,10 +50,7 @@ export function fillRing(
   }
 }
 
-/**
- * Sweep from the bottom of the ring toward the right, then up (same as the
- * old Three.js ring: thetaStart −π/2, Y-up, CCW).
- */
+/** Sweep from 6 o'clock toward 3 o'clock, then up. `sweep` is radians, 0–2π. */
 export function fillSweepRing(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -74,6 +71,23 @@ export function fillSweepRing(
       let fromBottom = Math.PI / 2 - Math.atan2(y, x);
       if (fromBottom < 0) fromBottom += tau;
       if (fromBottom <= span) ctx.fillRect(cx + x, cy + y, 1, 1);
+    }
+  }
+}
+
+/** Stamp an 8×8 `X`/`.` glyph at stage pixels `(x, y)`. */
+export function stampGlyph(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  rows: readonly string[],
+  color: string,
+): void {
+  ctx.fillStyle = color;
+  for (let row = 0; row < rows.length; row++) {
+    const line = rows[row]!;
+    for (let col = 0; col < line.length; col++) {
+      if (line[col] === "X") ctx.fillRect(x + col, y + row, 1, 1);
     }
   }
 }

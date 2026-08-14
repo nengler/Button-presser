@@ -9,6 +9,7 @@ import {
   parentsOwned,
 } from "./upgradeTree.ts";
 import type { TreeNodeId } from "./upgradeTree.ts";
+import { isExtraPadId } from "../game/toys.ts";
 
 const LINE = "#3dff4a";
 const LOCK = "#6b5340";
@@ -89,7 +90,7 @@ export function UpgradeTree({
   const buy = () => {
     if (!canBuy) return;
     if (selected === "minion") onHireMinion();
-    else if (selected === "pad-b" || selected === "pad-c") onUnlockPad(selected);
+    else if (isExtraPadId(selected)) onUnlockPad(selected);
     else onBuyUpgrade(selected);
   };
 

@@ -1,20 +1,27 @@
 import { useEffect, useRef } from "react";
-import { padById } from "../game/toys.ts";
-import { COLORS, HEIGHT, PX, WIDTH } from "../game/view.ts";
+import type { RefObject } from "react";
+import { minionsOnStation, padById } from "../game/toys.ts";
+import { COLORS, HEIGHT, WIDTH } from "../game/view.ts";
 import type { Burst, PadRuntime } from "./useFutureToys.ts";
 import { fadeOnInk, fillDisc, fillRing, fillSweepRing } from "./pixelDraw.ts";
 
-const HIT_R = 1.2;
-const SPARK_POOL = 40;
-const MINION_ORBIT = 1.38;
+/** Beat-ring sizes in stage pixels. */
+const MOSS_IN = 32;
+const MOSS_OUT = 34;
+const SWEEP_IN = 35;
+const SWEEP_OUT = 38;
+const PULSE_R0 = 25;
+const PULSE_R1 = 34;
+const PIP_R0 = 3;
+const PIP_R1 = 7;
+const HIT_R = 43;
+const MINION_ORBIT = 50;
+const MINION_R = 4;
 const MINION_SPIN = 0.85;
+const SPARK_POOL = 40;
+const SPARK_SPEED0 = 43;
+const SPARK_SPEED1 = 166;
 const MAX_DT = 0.05;
-
-const MOSS_IN = Math.round(0.88 * PX);
-const MOSS_OUT = Math.round(0.94 * PX);
-const SWEEP_IN = Math.round(0.98 * PX);
-const SWEEP_OUT = Math.round(1.06 * PX);
-const MINION_R = Math.max(1, Math.round(0.11 * PX));
 
 type Speck = {
   x: number;
@@ -25,20 +32,6 @@ type Speck = {
   max: number;
 };
 
-function toScreen(x: number, y: number): { x: number; y: number } {
-  return {
-    x: Math.round(WIDTH / 2 + x * PX),
-    y: Math.round(HEIGHT / 2 - y * PX),
-  };
-}
-
-function toWorld(sx: number, sy: number): { x: number; y: number } {
-  return {
-    x: (sx - WIDTH / 2) / PX,
-    y: (HEIGHT / 2 - sy) / PX,
-  };
-}
-
 function eventToStage(canvas: HTMLCanvasElement, e: PointerEvent) {
   const rect = canvas.getBoundingClientRect();
   return {
@@ -48,23 +41,17 @@ function eventToStage(canvas: HTMLCanvasElement, e: PointerEvent) {
 }
 
 function hitPad(pads: PadRuntime[], sx: number, sy: number): string | null {
-  const { x: wx, y: wy } = toWorld(sx, sy);
   let best: { id: string; d2: number } | null = null;
   const r2 = HIT_R * HIT_R;
   for (const pad of pads) {
     const def = padById(pad.id);
-    const dx = wx - def.x;
-    const dy = wy - def.y;
+    const dx = sx - def.x;
+    const dy = sy - def.y;
     const d2 = dx * dx + dy * dy;
     if (d2 > r2) continue;
     if (!best || d2 < best.d2) best = { id: pad.id, d2 };
   }
   return best?.id ?? null;
-}
-
-function minionsOnStation(minions: number, index: number, stations: number): number {
-  if (stations <= 0) return 0;
-  return Math.floor(minions / stations) + (index < minions % stations ? 1 : 0);
 }
 
 function drawBeat(
@@ -76,8 +63,8 @@ function drawBeat(
 ) {
   const dist = Math.min(phase, 1 - phase);
   const near = 1 - dist * 2;
-  const pulseR = Math.round(0.7 * PX + near * 0.25 * PX);
-  const pipR = Math.max(1, Math.round(0.08 * PX + near * 0.1 * PX));
+  const pulseR = Math.round(PULSE_R0 + near * (PULSE_R1 - PULSE_R0));
+  const pipR = Math.max(1, Math.round(PIP_R0 + near * (PIP_R1 - PIP_R0)));
   const sweep = Math.max(0.001, phase * Math.PI * 2);
   const pulseOpacity = 0.08 + near * 0.22;
 
@@ -97,12 +84,12 @@ function drawBeat(
 function spawnSparks(specks: Speck[], burst: Burst) {
   for (let i = 0; i < 18; i++) {
     const a = Math.random() * Math.PI * 2;
-    const s = 1.2 + Math.random() * 3.4;
+    const s = SPARK_SPEED0 + Math.random() * (SPARK_SPEED1 - SPARK_SPEED0);
     specks.push({
       x: burst.x,
       y: burst.y,
       vx: Math.cos(a) * s,
-      vy: Math.sin(a) * s,
+      vy: -Math.sin(a) * s,
       life: 1,
       max: 0.45 + Math.random() * 0.35,
     });
@@ -123,24 +110,18 @@ function stepSparks(specks: Speck[], dt: number) {
 }
 
 export function Playfield({
-  pads,
-  minions,
-  burst,
+  padsRef,
+  minionsRef,
+  burstRef,
   onPressPad,
 }: {
-  pads: PadRuntime[];
-  minions: number;
-  burst: Burst;
+  padsRef: RefObject<PadRuntime[]>;
+  minionsRef: RefObject<number>;
+  burstRef: RefObject<Burst>;
   onPressPad: (id: string) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const padsRef = useRef(pads);
-  const minionsRef = useRef(minions);
-  const burstRef = useRef(burst);
   const onPressRef = useRef(onPressPad);
-  padsRef.current = pads;
-  minionsRef.current = minions;
-  burstRef.current = burst;
   onPressRef.current = onPressPad;
 
   useEffect(() => {
@@ -162,7 +143,7 @@ export function Playfield({
       elapsed += dt;
 
       const burstNow = burstRef.current;
-      if (burstNow.nonce !== 0 && burstNow.nonce !== lastNonce) {
+      if (burstNow && burstNow.nonce !== 0 && burstNow.nonce !== lastNonce) {
         lastNonce = burstNow.nonce;
         spawnSparks(specks, burstNow);
       }
@@ -171,16 +152,15 @@ export function Playfield({
       ctx.fillStyle = COLORS.ink;
       ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-      const livePads = padsRef.current;
+      const livePads = padsRef.current ?? [];
       for (const pad of livePads) {
         const def = padById(pad.id);
-        const { x, y } = toScreen(def.x, def.y);
-        drawBeat(ctx, x, y, pad.phase, def.color);
+        drawBeat(ctx, def.x, def.y, pad.phase, def.color);
       }
 
       const stations = livePads.map((p) => p.id);
       const n = Math.max(stations.length, 1);
-      const minionCount = minionsRef.current;
+      const minionCount = minionsRef.current ?? 0;
       ctx.fillStyle = COLORS.foam;
       for (let i = 0; i < stations.length; i++) {
         const assigned = minionsOnStation(minionCount, i, n);
@@ -188,19 +168,19 @@ export function Playfield({
         const pad = padById(stations[i]!);
         for (let m = 0; m < assigned; m++) {
           const angle = (m / assigned) * Math.PI * 2 + elapsed * MINION_SPIN;
-          const { x, y } = toScreen(
-            pad.x + Math.cos(angle) * MINION_ORBIT,
-            pad.y + Math.sin(angle) * MINION_ORBIT,
+          fillDisc(
+            ctx,
+            Math.round(pad.x + Math.cos(angle) * MINION_ORBIT),
+            Math.round(pad.y - Math.sin(angle) * MINION_ORBIT),
+            MINION_R,
           );
-          fillDisc(ctx, x, y, MINION_R);
         }
       }
 
       ctx.fillStyle = COLORS.goldHot;
       for (const p of specks) {
-        const { x, y } = toScreen(p.x, p.y);
-        const r = Math.max(1, Math.round((0.04 + p.life * 0.08) * PX));
-        fillDisc(ctx, x, y, r);
+        const r = Math.max(1, Math.round(1 + p.life * 3));
+        fillDisc(ctx, Math.round(p.x), Math.round(p.y), r);
       }
 
       raf = requestAnimationFrame(tick);
@@ -208,13 +188,13 @@ export function Playfield({
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [burstRef, minionsRef, padsRef]);
 
   const pointOnPad = (e: PointerEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const { x, y } = eventToStage(canvas, e);
-    return hitPad(padsRef.current, x, y);
+    return hitPad(padsRef.current ?? [], x, y);
   };
 
   return (

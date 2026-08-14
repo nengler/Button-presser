@@ -1,12 +1,8 @@
-import { loadSave, persistSave } from "./save.js";
-import { nearestBeatError, scorePress } from "./timing.js";
-import type { GameSave, PressResult, UpgradeId } from "./types.js";
-import { EXTRA_PADS, MINION_COST, MINION_MAX } from "./toys.js";
-import {
-  UPGRADE_DEFS,
-  intervalMs,
-  warmupBonus,
-} from "./upgrades.js";
+import { loadSave, persistSave } from "./save.ts";
+import { nearestBeatError, scorePress } from "./timing.ts";
+import type { GameSave, PressResult, UpgradeId } from "./types.ts";
+import { MINION_COST, MINION_MAX, extraPadById } from "./toys.ts";
+import { UPGRADE_DEFS, intervalMs, warmupBonus } from "./upgrades.ts";
 
 export type GameListener = (snapshot: GameSnapshot) => void;
 
@@ -161,7 +157,7 @@ export class Game {
 
   unlockPad(id: string): boolean {
     if (this.save.unlockedPads.includes(id)) return false;
-    const pad = EXTRA_PADS.find((p) => p.id === id);
+    const pad = extraPadById(id);
     if (!pad) return false;
     if (this.save.score < pad.cost) return false;
     this.save.score -= pad.cost;

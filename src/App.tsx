@@ -41,11 +41,11 @@ export function App() {
         style={{ width: WIDTH * scale, height: HEIGHT * scale }}
       >
         <div className="stage" style={{ transform: `scale(${scale})` }}>
-          <div className="gl">
+          <div className="playfield">
             <Playfield
-              pads={toys.padUi}
-              minions={snap.minions}
-              burst={toys.burst}
+              padsRef={toys.padsRef}
+              minionsRef={toys.minionsRef}
+              burstRef={toys.burstRef}
               onPressPad={toys.pressPad}
             />
           </div>

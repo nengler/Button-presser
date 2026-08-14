@@ -46,5 +46,6 @@ index.html
 
 - Add leveled upgrades in `src/game/upgrades.ts`.
 - Add tree nodes in `src/ui/upgradeTree.ts`.
-- Add pads in `src/game/toys.ts`.
+- Add a pad in `src/game/toys.ts` (`EXTRA_PADS`): stage-pixel `x`/`y`, color, timer, plus `treeX`/`treeY`, blurb, and an 8×8 `icon`. The playfield and skill tree pick it up.
 - Tune scoring in `src/game/timing.ts`.
+- Draw new playfield art with `fillDisc` / `fillRing` / `stampGlyph` in `src/ui/pixelDraw.ts` (coordinates are stage pixels, Y down).

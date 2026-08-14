@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { Game } from "../game/Game.ts";
 import { nearestBeatError, scorePress } from "../game/timing.ts";
 import {
   MAIN_STATION_ID,
+  minionsOnStation,
   padById,
 } from "../game/toys.ts";
 
@@ -11,14 +12,12 @@ export type Burst = { nonce: number; x: number; y: number };
 export type PadRuntime = {
   id: string;
   phase: number;
-  lastLabel: string | null;
 };
 
 export function useFutureToys(game: Game, pressMain: () => void) {
-  const [burst, setBurst] = useState<Burst>({ nonce: 0, x: 0, y: 0 });
-  const [padUi, setPadUi] = useState<PadRuntime[]>([
-    { id: MAIN_STATION_ID, phase: 0, lastLabel: null },
-  ]);
+  const padsRef = useRef<PadRuntime[]>([{ id: MAIN_STATION_ID, phase: 0 }]);
+  const burstRef = useRef<Burst>({ nonce: 0, x: 0, y: 0 });
+  const minionsRef = useRef(0);
 
   const origins = useRef<Record<string, number>>({});
   const used = useRef<Record<string, Set<number>>>({});
@@ -27,7 +26,11 @@ export function useFutureToys(game: Game, pressMain: () => void) {
 
   const spark = useCallback((stationId: string) => {
     const pad = padById(stationId);
-    setBurst((b) => ({ nonce: b.nonce + 1, x: pad.x, y: pad.y }));
+    burstRef.current = {
+      nonce: burstRef.current.nonce + 1,
+      x: pad.x,
+      y: pad.y,
+    };
   }, []);
 
   const pressMainAndSpark = useCallback(() => {
@@ -48,8 +51,7 @@ export function useFutureToys(game: Game, pressMain: () => void) {
       const pad = padById(id);
       const origin = origins.current[id] ?? now;
       const { errorMs, beatIndex } = nearestBeatError(now, origin, pad.interval);
-      const key = id;
-      const seen = (used.current[key] ??= new Set());
+      const seen = (used.current[id] ??= new Set());
       if (seen.has(beatIndex)) return;
       seen.add(beatIndex);
 
@@ -65,19 +67,6 @@ export function useFutureToys(game: Game, pressMain: () => void) {
       streaks.current[id] = result.streak;
       game.addScore(result.points);
       spark(id);
-      setPadUi((rows) =>
-        rows.map((row) =>
-          row.id === id
-            ? {
-                ...row,
-                lastLabel:
-                  result.grade === "miss"
-                    ? "MISS"
-                    : `+${result.points} ${result.grade.toUpperCase()}`,
-              }
-            : row,
-        ),
-      );
     },
     [game, pressMainAndSpark, spark],
   );
@@ -101,7 +90,9 @@ export function useFutureToys(game: Game, pressMain: () => void) {
     used.current = {};
     streaks.current = {};
     minionBeat.current = {};
-    setPadUi([{ id: MAIN_STATION_ID, phase: 0, lastLabel: null }]);
+    padsRef.current = [{ id: MAIN_STATION_ID, phase: 0 }];
+    burstRef.current = { nonce: 0, x: 0, y: 0 };
+    minionsRef.current = 0;
   }, []);
 
   useEffect(() => {
@@ -111,6 +102,7 @@ export function useFutureToys(game: Game, pressMain: () => void) {
       const now = performance.now();
       const unlocked = live.unlockedPads;
       const minionCount = live.minions;
+      minionsRef.current = minionCount;
       if (live.running) {
         for (const id of unlocked) {
           origins.current[id] ??= now;
@@ -118,7 +110,7 @@ export function useFutureToys(game: Game, pressMain: () => void) {
       }
       const stations = [MAIN_STATION_ID, ...unlocked];
 
-      const nextUi: PadRuntime[] = stations.map((id) => {
+      padsRef.current = stations.map((id) => {
         const pad = padById(id);
         const interval = id === MAIN_STATION_ID ? live.interval : pad.interval;
         const origin =
@@ -128,25 +120,13 @@ export function useFutureToys(game: Game, pressMain: () => void) {
         const phase = live.running
           ? ((now - origin) % interval) / interval
           : (now / interval) % 1;
-        return {
-          id,
-          phase,
-          lastLabel: null,
-        };
+        return { id, phase };
       });
-      setPadUi((prev) =>
-        nextUi.map((row) => ({
-          ...row,
-          lastLabel: prev.find((p) => p.id === row.id)?.lastLabel ?? null,
-        })),
-      );
 
       if (live.running && minionCount > 0) {
+        const n = stations.length;
         stations.forEach((id, i) => {
-          const assigned = [...Array(minionCount).keys()].filter(
-            (m) => m % stations.length === i,
-          );
-          if (assigned.length === 0) return;
+          if (minionsOnStation(minionCount, i, n) === 0) return;
 
           const pad = padById(id);
           const interval = id === MAIN_STATION_ID ? live.interval : pad.interval;
@@ -178,8 +158,9 @@ export function useFutureToys(game: Game, pressMain: () => void) {
   }, [game, pressMainAndSpark, pressPad]);
 
   return {
-    burst,
-    padUi,
+    padsRef,
+    burstRef,
+    minionsRef,
     hireMinion,
     unlockPad,
     pressPad,

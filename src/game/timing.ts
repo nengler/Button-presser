@@ -1,9 +1,9 @@
-import type { PressResult } from "./types.js";
+import type { PressResult } from "./types.ts";
 import {
   comboFactor,
   scoreMultiplier,
   windowMs,
-} from "./upgrades.js";
+} from "./upgrades.ts";
 
 const GRADE_THRESHOLDS = {
   perfect: 0.12,

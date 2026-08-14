@@ -1,8 +1,6 @@
-/** Internal render resolution (16:9). */
+/** Internal render resolution (16:9). Draw here; the stage integer-scales it. */
 export const WIDTH = 320;
 export const HEIGHT = 180;
-/** Stage pixels per playfield unit (pad layout). */
-export const PX = 36;
 
 export const COLORS = {
   ink: "#14201c",
