@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { HEIGHT, WIDTH } from "./game/view.ts";
 import { Hud } from "./ui/Hud.tsx";
-import { R3FBeat } from "./ui/R3FBeat.tsx";
+import { Playfield } from "./ui/Playfield.tsx";
 import { UpgradeTree } from "./ui/UpgradeTree.tsx";
 import { useButtonPresser } from "./ui/useButtonPresser.ts";
 import { useFutureToys } from "./ui/useFutureToys.ts";
@@ -42,7 +42,7 @@ export function App() {
       >
         <div className="stage" style={{ transform: `scale(${scale})` }}>
           <div className="gl">
-            <R3FBeat
+            <Playfield
               pads={toys.padUi}
               minions={snap.minions}
               burst={toys.burst}
