@@ -20,6 +20,8 @@ function gradeColor(grade: string): string {
       return COLORS.ok;
     case "miss":
       return COLORS.miss;
+    case "set":
+      return COLORS.sage;
     default:
       return COLORS.goldHot;
   }
@@ -236,6 +238,9 @@ export function Hud({
         <span className={`stat gold${pop ? " pop" : ""}`}>SCR {scoreText}</span>
         <span className={`stat${strNudge ? " nudge" : ""}`}>STR {snap.streak}</span>
         <span className={`stat sage${bestNudge ? " nudge" : ""}`}>BEST {snap.bestStreak}</span>
+        {snap.stars > 0 ? (
+          <span className="stat">STAR {snap.stars}</span>
+        ) : null}
       </div>
 
       {puffs.map((puff) => (

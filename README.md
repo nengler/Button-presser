@@ -41,7 +41,7 @@ npm run electron   # desktop window (production build)
 3. Grades: perfect → great → good → ok → miss. Misses break your streak.
 4. Open **TREE** to buy upgrades. Paths gate later nodes. Progress saves in `localStorage`.
 
-WARM unlocks MULT and FOCUS. Those merge into MINION (helpers that hit leftover beats). Minions unlock extra pads with their own timers.
+WARM unlocks MULT and FOCUS. Those merge into STAR (helpers that tap leftover beats you miss). Stars start slow and late. Buy PULSE and AIM to make them fire more often and closer to the beat. Stars also unlock extra pads: a 1.5s timer, a 3s double-tap, and a 0.75s pad that only scores every two hits in a row.
 
 ## Layout
 
@@ -57,6 +57,6 @@ src/
 
 - Upgrades: `src/game/upgrades.ts`
 - Tree layout: `src/ui/upgradeTree.ts`
-- Pads: `src/game/pads.ts` (`EXTRA_PADS` — stage-pixel `x`/`y`, timer, tree slot, 8×8 `icon`)
+- Pads: `src/game/pads.ts` (`EXTRA_PADS` — stage-pixel `x`/`y`, timer, `kind`, tree slot, 8×8 `icon`)
 - Scoring: `src/game/timing.ts`
 - Playfield drawing: `src/ui/pixelDraw.ts` (stage pixels, Y down)

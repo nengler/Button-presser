@@ -62,21 +62,21 @@ export function UpgradeTree({
   snap,
   onBack,
   onBuyUpgrade,
-  onHireMinion,
+  onHireStar,
   onUnlockPad,
   onReset,
 }: {
   snap: GameSnapshot;
   onBack: () => void;
   onBuyUpgrade: (id: UpgradeId) => void;
-  onHireMinion: () => void;
+  onHireStar: () => void;
   onUnlockPad: (id: string) => void;
   onReset: () => void;
 }) {
   const progress = Object.fromEntries(
     TREE_NODES.map((n) => [
       n.id,
-      nodeProgress(n.id, snap.upgrades, snap.minions, snap.unlockedPads),
+      nodeProgress(n.id, snap.upgrades, snap.stars, snap.unlockedPads),
     ]),
   ) as Record<TreeNodeId, ReturnType<typeof nodeProgress>>;
 
@@ -90,7 +90,7 @@ export function UpgradeTree({
 
   const buy = () => {
     if (!canBuy) return;
-    if (selected === "minion") onHireMinion();
+    if (selected === "star") onHireStar();
     else if (isExtraPadId(selected)) onUnlockPad(selected);
     else onBuyUpgrade(selected);
   };

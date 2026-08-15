@@ -1,27 +1,44 @@
 import { defaultSave, loadSave, persistSave } from "./save.ts";
-import { nearestBeatError, scorePress } from "./timing.ts";
+import {
+  nearestBeatError,
+  pairCompletes,
+  scorePress,
+  withinDoubleGap,
+} from "./timing.ts";
 import type { GameSave, PressResult, UpgradeId } from "./types.ts";
 import {
+  DOUBLE_GAP_MS,
   MAIN_PAD,
-  MINION_COST,
-  MINION_MAX,
+  STAR_COST,
+  STAR_MAX,
   extraPadById,
-  minionsOnStation,
   padById,
+  starsOnStation,
 } from "./pads.ts";
-import { UPGRADE_DEFS, intervalMs, warmupBonus } from "./upgrades.ts";
+import {
+  UPGRADE_DEFS,
+  intervalMs,
+  starAimErrorMs,
+  starAttemptEvery,
+  warmupBonus,
+} from "./upgrades.ts";
 
-const MINION_HIT_MS = 32;
+const STAR_HIT_SLOP_MS = 20;
 
 type ExtraClock = {
   origin: number;
   used: Set<number>;
   streak: number;
-  minionBeat: number;
+  starBeat: number;
+  skip: number;
+  pendingTapAt: number | null;
+  pendingBeat: number;
+  pendingErrorMs: number;
+  lastSuccessBeat: number;
 };
 
 export type Burst = { nonce: number; x: number; y: number };
-export type PadView = { id: string; phase: number };
+export type PadView = { id: string; phase: number; mark: 0 | 1 | 2 };
 
 export type GameSnapshot = {
   score: number;
@@ -32,7 +49,7 @@ export type GameSnapshot = {
   lastResult: PressResult | null;
   upgrades: GameSave["upgrades"];
   running: boolean;
-  minions: number;
+  stars: number;
   unlockedPads: string[];
   hitNonce: number;
   hitX: number;
@@ -48,7 +65,8 @@ export class Game {
   private streak = 0;
   private lastResult: PressResult | null = null;
   private usedBeats = new Set<number>();
-  private minionBeatMain = -1;
+  private starBeatMain = -1;
+  private starSkipMain = 0;
   private extra = new Map<string, ExtraClock>();
   private running = false;
   private warmupGranted = false;
@@ -80,27 +98,54 @@ export class Game {
     this.emit();
   }
 
-  /** Drive minion auto-hits. Call once per animation frame. */
+  /** Drive star auto-hits. Call once per animation frame. */
   tick(now = performance.now()): void {
-    if (!this.running || this.save.minions <= 0) return;
+    if (!this.running) return;
+    this.expireDoubles(now);
+    if (this.save.stars <= 0) return;
     const stations = this.stationIds();
     const n = stations.length;
+    const period = starAttemptEvery(this.save.upgrades.starRate);
+    const aim = starAimErrorMs(this.save.upgrades.starAim);
     for (let i = 0; i < n; i++) {
       const id = stations[i]!;
-      if (minionsOnStation(this.save.minions, i, n) === 0) continue;
+      if (starsOnStation(this.save.stars, i, n) === 0) continue;
+      const pad = padById(id);
       const { origin, interval } = this.timeline(id, now);
       const { errorMs, beatIndex } = nearestBeatError(now, origin, interval);
-      if (Math.abs(errorMs) > MINION_HIT_MS) continue;
+
+      if (pad.kind === "double") {
+        const clock = this.ensureExtra(id, now);
+        if (
+          clock.pendingTapAt !== null &&
+          now - clock.pendingTapAt >= 70 &&
+          now - clock.pendingTapAt <= DOUBLE_GAP_MS
+        ) {
+          this.press(id, now, { fromStar: true });
+          continue;
+        }
+      }
+
+      if (Math.abs(errorMs - aim) > STAR_HIT_SLOP_MS) continue;
+
       if (id === MAIN_PAD.id) {
-        if (this.minionBeatMain === beatIndex || !this.canPress(now)) continue;
-        this.minionBeatMain = beatIndex;
-        this.press(id, now);
+        if (this.starBeatMain === beatIndex || !this.canPress(now)) continue;
+        this.starSkipMain += 1;
+        if (this.starSkipMain < period) continue;
+        this.starSkipMain = 0;
+        this.starBeatMain = beatIndex;
+        this.press(id, now, { fromStar: true });
         continue;
       }
+
       const clock = this.ensureExtra(id, now);
-      if (clock.minionBeat === beatIndex || clock.used.has(beatIndex)) continue;
-      clock.minionBeat = beatIndex;
-      this.press(id, now);
+      if (clock.starBeat === beatIndex || clock.used.has(beatIndex)) continue;
+      if (clock.pendingTapAt !== null) continue;
+      clock.skip += 1;
+      if (clock.skip < period) continue;
+      clock.skip = 0;
+      clock.starBeat = beatIndex;
+      this.press(id, now, { fromStar: true });
     }
   }
 
@@ -109,15 +154,19 @@ export class Game {
    * Returns false if the game is paused, the pad is locked, or that extra beat
    * was already used.
    */
-  press(id = MAIN_PAD.id, now = performance.now()): boolean {
+  press(
+    id = MAIN_PAD.id,
+    now = performance.now(),
+    opts: { fromStar?: boolean } = {},
+  ): boolean {
     if (!this.running) return false;
     if (id === MAIN_PAD.id) {
       this.ping(id);
-      this.pressMain(now);
+      this.pressMain(now, opts.fromStar === true);
       return true;
     }
     if (!this.save.unlockedPads.includes(id)) return false;
-    if (!this.pressExtra(id, now)) return false;
+    if (!this.pressExtra(id, now, opts.fromStar === true)) return false;
     return true;
   }
 
@@ -144,11 +193,11 @@ export class Game {
     return true;
   }
 
-  hireMinion(): boolean {
-    if (this.save.minions >= MINION_MAX) return false;
-    if (this.save.score < MINION_COST) return false;
-    this.save.score -= MINION_COST;
-    this.save.minions += 1;
+  hireStar(): boolean {
+    if (this.save.stars >= STAR_MAX) return false;
+    if (this.save.score < STAR_COST) return false;
+    this.save.score -= STAR_COST;
+    this.save.stars += 1;
     persistSave(this.save);
     this.emit();
     return true;
@@ -171,7 +220,8 @@ export class Game {
     this.streak = 0;
     this.lastResult = null;
     this.usedBeats.clear();
-    this.minionBeatMain = -1;
+    this.starBeatMain = -1;
+    this.starSkipMain = 0;
     this.extra.clear();
     this.warmupGranted = false;
     this.burst = { nonce: 0, x: 0, y: 0 };
@@ -180,11 +230,20 @@ export class Game {
   }
 
   pads(now = performance.now()): PadView[] {
-    return this.stationIds().map((id) => ({ id, phase: this.phaseOf(id, now) }));
+    return this.stationIds().map((id) => {
+      let mark: 0 | 1 | 2 = 0;
+      if (id !== MAIN_PAD.id) {
+        const clock = this.extra.get(id);
+        const pad = padById(id);
+        if (clock && pad.kind === "double" && clock.pendingTapAt !== null) mark = 2;
+        else if (clock && pad.kind === "pair" && clock.lastSuccessBeat >= 0) mark = 1;
+      }
+      return { id, phase: this.phaseOf(id, now), mark };
+    });
   }
 
-  get minions(): number {
-    return this.save.minions;
+  get stars(): number {
+    return this.save.stars;
   }
 
   snapshot(): GameSnapshot {
@@ -199,7 +258,7 @@ export class Game {
       lastResult: this.lastResult,
       upgrades: { ...this.save.upgrades },
       running: this.running,
-      minions: this.save.minions,
+      stars: this.save.stars,
       unlockedPads: [...this.save.unlockedPads],
       hitNonce: this.burst.nonce,
       hitX: this.burst.x,
@@ -227,13 +286,44 @@ export class Game {
   private ensureExtra(id: string, now: number): ExtraClock {
     let clock = this.extra.get(id);
     if (!clock) {
-      clock = { origin: now, used: new Set(), streak: 0, minionBeat: -1 };
+      clock = {
+        origin: now,
+        used: new Set(),
+        streak: 0,
+        starBeat: -1,
+        skip: 0,
+        pendingTapAt: null,
+        pendingBeat: -1,
+        pendingErrorMs: 0,
+        lastSuccessBeat: -1,
+      };
       this.extra.set(id, clock);
     }
     return clock;
   }
 
-  private pressMain(now: number): void {
+  private expireDoubles(now: number): void {
+    for (const [id, clock] of this.extra) {
+      if (clock.pendingTapAt === null) continue;
+      if (now - clock.pendingTapAt <= DOUBLE_GAP_MS) continue;
+      const beatIndex = clock.pendingBeat;
+      clock.pendingTapAt = null;
+      clock.pendingBeat = -1;
+      clock.used.add(beatIndex);
+      clock.streak = 0;
+      this.lastResult = {
+        errorMs: DOUBLE_GAP_MS,
+        points: 0,
+        grade: "miss",
+        streak: 0,
+        beatIndex,
+      };
+      this.ping(id);
+      this.emit();
+    }
+  }
+
+  private pressMain(now: number, fromStar: boolean): void {
     const interval = intervalMs(this.save.upgrades.tempo);
     const { errorMs, beatIndex } = nearestBeatError(now, this.origin, interval);
 
@@ -252,14 +342,7 @@ export class Game {
       }
     }
 
-    const result = scorePress({
-      errorMs,
-      focusLevel: this.save.upgrades.focus,
-      multiplierLevel: this.save.upgrades.multiplier,
-      comboLevel: this.save.upgrades.combo,
-      streakBefore: this.streak,
-      beatIndex,
-    });
+    const result = this.scoreHit(errorMs, this.streak, beatIndex, fromStar);
     this.streak = result.streak;
     if (result.streak > this.save.bestStreak) this.save.bestStreak = result.streak;
     this.save.score += result.points;
@@ -268,22 +351,26 @@ export class Game {
     this.emit();
   }
 
-  private pressExtra(id: string, now: number): boolean {
+  private pressExtra(id: string, now: number, fromStar: boolean): boolean {
     const pad = padById(id);
     const clock = this.ensureExtra(id, now);
     const { errorMs, beatIndex } = nearestBeatError(now, clock.origin, pad.interval);
+
+    if (pad.kind === "double") {
+      return this.pressDouble(id, clock, errorMs, beatIndex, now, fromStar);
+    }
+
     if (clock.used.has(beatIndex)) return false;
     clock.used.add(beatIndex);
+    this.trimUsed(clock.used, beatIndex);
     this.ping(id);
-    const result = scorePress({
-      errorMs,
-      focusLevel: this.save.upgrades.focus,
-      multiplierLevel: this.save.upgrades.multiplier,
-      comboLevel: this.save.upgrades.combo,
-      streakBefore: clock.streak,
-      beatIndex,
-    });
-    clock.streak = result.streak;
+
+    const result = this.scoreHit(errorMs, clock.streak, beatIndex, fromStar);
+    if (pad.kind === "pair") {
+      this.applyPair(clock, result);
+    } else {
+      clock.streak = result.streak;
+    }
     this.lastResult = result;
     if (result.points > 0) {
       this.save.score += result.points;
@@ -291,6 +378,128 @@ export class Game {
     }
     this.emit();
     return true;
+  }
+
+  private pressDouble(
+    id: string,
+    clock: ExtraClock,
+    errorMs: number,
+    beatIndex: number,
+    now: number,
+    fromStar: boolean,
+  ): boolean {
+    if (clock.pendingTapAt !== null) {
+      const heldBeat = clock.pendingBeat;
+      const heldError = clock.pendingErrorMs;
+      if (withinDoubleGap(clock.pendingTapAt, now, DOUBLE_GAP_MS)) {
+        clock.pendingTapAt = null;
+        clock.pendingBeat = -1;
+        clock.used.add(heldBeat);
+        this.trimUsed(clock.used, heldBeat);
+        this.ping(id);
+        const result = this.scoreHit(heldError, clock.streak, heldBeat, fromStar);
+        clock.streak = result.streak;
+        this.lastResult = result;
+        if (result.points > 0) {
+          this.save.score += result.points;
+          persistSave(this.save);
+        }
+        this.emit();
+        return true;
+      }
+      clock.pendingTapAt = null;
+      clock.pendingBeat = -1;
+      clock.used.add(heldBeat >= 0 ? heldBeat : beatIndex);
+      clock.streak = 0;
+      this.lastResult = {
+        errorMs,
+        points: 0,
+        grade: "miss",
+        streak: 0,
+        beatIndex: heldBeat >= 0 ? heldBeat : beatIndex,
+      };
+      this.ping(id);
+      this.emit();
+      return true;
+    }
+
+    if (clock.used.has(beatIndex)) return false;
+
+    const probe = this.scoreHit(errorMs, 0, beatIndex, fromStar);
+    if (probe.grade === "miss") {
+      clock.used.add(beatIndex);
+      this.trimUsed(clock.used, beatIndex);
+      clock.streak = 0;
+      this.lastResult = probe;
+      this.ping(id);
+      this.emit();
+      return true;
+    }
+
+    clock.pendingTapAt = now;
+    clock.pendingBeat = beatIndex;
+    clock.pendingErrorMs = errorMs;
+    this.lastResult = {
+      errorMs,
+      points: 0,
+      grade: "set",
+      streak: clock.streak,
+      beatIndex,
+    };
+    this.ping(id);
+    this.emit();
+    return true;
+  }
+
+  private applyPair(clock: ExtraClock, result: PressResult): void {
+    if (result.grade === "miss") {
+      clock.streak = 0;
+      clock.lastSuccessBeat = -1;
+      return;
+    }
+    if (pairCompletes(clock.lastSuccessBeat, result.beatIndex)) {
+      clock.streak = result.streak;
+      clock.lastSuccessBeat = -1;
+      return;
+    }
+    clock.lastSuccessBeat = result.beatIndex;
+    clock.streak = result.streak;
+    result.points = 0;
+    result.grade = "set";
+  }
+
+  private scoreHit(
+    errorMs: number,
+    streakBefore: number,
+    beatIndex: number,
+    fromStar: boolean,
+  ): PressResult {
+    if (fromStar) {
+      return scorePress({
+        errorMs,
+        focusLevel: 0,
+        multiplierLevel: 0,
+        comboLevel: 0,
+        streakBefore: 0,
+        beatIndex,
+      });
+    }
+    return scorePress({
+      errorMs,
+      focusLevel: this.save.upgrades.focus,
+      multiplierLevel: this.save.upgrades.multiplier,
+      comboLevel: this.save.upgrades.combo,
+      streakBefore,
+      beatIndex,
+    });
+  }
+
+  private trimUsed(used: Set<number>, beatIndex: number): void {
+    if (used.size <= 64) return;
+    const min = beatIndex - 32;
+    for (const b of [...used]) {
+      if (b < min) used.delete(b);
+    }
   }
 
   private ping(id: string): void {

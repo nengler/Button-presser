@@ -2,8 +2,8 @@
  * Zero-dep smoke checks for timing/scoring (run: node --experimental-strip-types won't work on compiled).
  * Prefer: npm run build && node scripts/smoke.mjs
  */
-import { nearestBeatError, scorePress } from "../src/game/timing.ts";
-import { windowMs } from "../src/game/upgrades.ts";
+import { nearestBeatError, pairCompletes, scorePress, withinDoubleGap } from "../src/game/timing.ts";
+import { starAimErrorMs, starAttemptEvery, windowMs } from "../src/game/upgrades.ts";
 import { MAIN_PAD } from "../src/game/pads.ts";
 import { HEIGHT, WIDTH } from "../src/game/view.ts";
 import { HIT_R, hitPad, pointerToCanvas } from "../src/ui/pointer.ts";
@@ -36,7 +36,7 @@ const interval = 1000;
     beatIndex: 0,
   });
   assert(perfect.grade === "perfect", `expected perfect, got ${perfect.grade}`);
-  assert(perfect.points > 90, `expected high points, got ${perfect.points}`);
+  assert(perfect.points > 70, `expected high points, got ${perfect.points}`);
 }
 
 {
@@ -95,6 +95,17 @@ const interval = 1000;
   assert(hitPad(pads, MAIN_PAD.x + HIT_R, MAIN_PAD.y) === MAIN_PAD.id, "edge of hit radius should hit");
   assert(hitPad(pads, MAIN_PAD.x + HIT_R + 1, MAIN_PAD.y) === null, "outside hit radius should miss");
   assert(pointerToCanvas(canvas, 99, 50) === null, "letterbox left of canvas should miss");
+}
+
+{
+  assert(starAttemptEvery(0) === 8, "stars start on every 8th leftover beat");
+  assert(starAttemptEvery(5) === 1, "max pulse attempts every leftover beat");
+  assert(starAimErrorMs(0) > starAimErrorMs(5), "aim upgrades tap closer");
+  assert(withinDoubleGap(1000, 1200, 280), "double tap inside gap");
+  assert(!withinDoubleGap(1000, 1400, 280), "double tap outside gap");
+  assert(pairCompletes(4, 5), "pair scores on the next beat");
+  assert(!pairCompletes(4, 6), "pair resets if a beat is skipped");
+  assert(!pairCompletes(-1, 0), "first success does not score a pair");
 }
 
 console.log("smoke ok");

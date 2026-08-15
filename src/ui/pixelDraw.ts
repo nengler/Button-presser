@@ -12,6 +12,16 @@ export function fadeOnInk(fg: string, alpha: number): string {
   return `rgb(${Math.round(r * t + ir * (1 - t))},${Math.round(g * t + ig * (1 - t))},${Math.round(b * t + ib * (1 - t))})`;
 }
 
+export function fillStar(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+): void {
+  ctx.fillRect(cx, cy - 3, 1, 7);
+  ctx.fillRect(cx - 3, cy, 7, 1);
+  ctx.fillRect(cx - 1, cy - 1, 3, 3);
+}
+
 export function fillDisc(
   ctx: CanvasRenderingContext2D,
   cx: number,

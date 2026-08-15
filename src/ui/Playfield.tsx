@@ -1,17 +1,16 @@
 import { useEffect, useRef } from "react";
 import type { Game } from "../game/Game.ts";
-import { MAIN_PAD, minionsOnStation, padById } from "../game/pads.ts";
+import { MAIN_PAD, padById, starsOnStation } from "../game/pads.ts";
 import { COLORS, HEIGHT, WIDTH } from "../game/view.ts";
-import { fadeOnInk, fillDisc, fillRing, fillSweepRing } from "./pixelDraw.ts";
+import { fadeOnInk, fillDisc, fillRing, fillStar, fillSweepRing } from "./pixelDraw.ts";
 import { hitPad, pointerToCanvas } from "./pointer.ts";
 
 const RING_IN = 30;
 const RING_OUT = 34;
 const PIP_R0 = 2;
 const PIP_R1 = 5;
-const MINION_ORBIT = 50;
-const MINION_R = 4;
-const MINION_SPIN = 0.85;
+const STAR_ORBIT = 42;
+const STAR_SPIN = 0.85;
 const SPARK_POOL = 40;
 const SPARK_SPEED0 = 43;
 const SPARK_SPEED1 = 166;
@@ -32,6 +31,7 @@ function drawBeat(
   cy: number,
   phase: number,
   color: string,
+  mark: 0 | 1 | 2,
 ) {
   const near = 1 - Math.min(phase, 1 - phase) * 2;
   const pipR = Math.max(2, Math.round(PIP_R0 + near * (PIP_R1 - PIP_R0)));
@@ -42,6 +42,10 @@ function drawBeat(
   fillSweepRing(ctx, cx, cy, RING_IN, RING_OUT, Math.max(0.001, phase * Math.PI * 2));
   ctx.fillStyle = fadeOnInk(COLORS.goldHot, 0.5 + near * 0.5);
   fillDisc(ctx, cx, cy, pipR);
+  if (mark > 0) {
+    ctx.fillStyle = mark === 2 ? COLORS.foam : COLORS.sage;
+    fillRing(ctx, cx, cy, 8, 10);
+  }
 }
 
 function spawnSparks(specks: Speck[], x: number, y: number) {
@@ -101,23 +105,22 @@ export function Playfield({ game }: { game: Game }) {
       const pads = g.pads(now);
       for (const pad of pads) {
         const def = padById(pad.id);
-        drawBeat(ctx, def.x, def.y, pad.phase, def.color);
+        drawBeat(ctx, def.x, def.y, pad.phase, def.color, pad.mark);
       }
 
       const n = Math.max(pads.length, 1);
-      const minions = g.minions;
+      const stars = g.stars;
       ctx.fillStyle = COLORS.foam;
       for (let i = 0; i < pads.length; i++) {
-        const count = minionsOnStation(minions, i, n);
+        const count = starsOnStation(stars, i, n);
         if (count === 0) continue;
         const pad = padById(pads[i]!.id);
         for (let m = 0; m < count; m++) {
-          const angle = (m / count) * Math.PI * 2 + elapsed * MINION_SPIN;
-          fillDisc(
+          const angle = (m / count) * Math.PI * 2 + elapsed * STAR_SPIN;
+          fillStar(
             ctx,
-            Math.round(pad.x + Math.cos(angle) * MINION_ORBIT),
-            Math.round(pad.y - Math.sin(angle) * MINION_ORBIT),
-            MINION_R,
+            Math.round(pad.x + Math.cos(angle) * STAR_ORBIT),
+            Math.round(pad.y - Math.sin(angle) * STAR_ORBIT),
           );
         }
       }
