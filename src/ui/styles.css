@@ -1,13 +1,13 @@
 :root {
-  --ink: #14201c;
-  --ink2: #1c2c26;
-  --panel: #18241f;
-  --moss: #3d5c4a;
-  --sage: #9bb59a;
-  --foam: #e7f0e4;
-  --gold: #d4a24c;
-  --gold-hot: #f0c56d;
-  --dim: #5a7364;
+  --ink: #0d2b45;
+  --ink2: #203c56;
+  --panel: #203c56;
+  --moss: #544e68;
+  --sage: #8d697a;
+  --foam: #ffecd6;
+  --gold: #ffaa5e;
+  --gold-hot: #ffd4a3;
+  --dim: #544e68;
 }
 
 *,
@@ -212,7 +212,7 @@ body,
   position: absolute;
   inset: 0;
   z-index: 5;
-  background: #000;
+  background: var(--ink);
   pointer-events: auto;
 }
 
@@ -257,8 +257,8 @@ body,
   width: 16px;
   height: 16px;
   padding: 0;
-  border: 2px solid #6b5340;
-  background: #050505;
+  border: 2px solid var(--moss);
+  background: var(--ink);
 }
 
 .pix {
@@ -285,19 +285,19 @@ body,
   align-items: center;
   justify-content: space-between;
   padding: 0 6px;
-  background: #080808;
-  border-top: 1px solid #3dff4a;
+  background: var(--ink2);
+  border-top: 1px solid var(--gold);
 }
 
 .tree-title {
   font-size: 8px;
-  color: #e7f0e4;
+  color: var(--foam);
 }
 
 .tree-blurb {
   margin-top: 2px;
   font-size: 6px;
-  color: #9bb59a;
+  color: var(--sage);
 }
 
 .tree-buy {

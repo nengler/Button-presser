@@ -10,12 +10,13 @@ import {
 } from "./upgradeTree.ts";
 import type { TreeNodeId } from "./upgradeTree.ts";
 import { isExtraPadId } from "../game/pads.ts";
+import { COLORS } from "../game/view.ts";
 
-const LINE = "#3dff4a";
-const LOCK = "#6b5340";
-const SELECT = "#7ec8ff";
-const FACE = "#d8d8d8";
-const FACE_DIM = "#7a6a58";
+const LINE = COLORS.gold;
+const LOCK = COLORS.moss;
+const SELECT = COLORS.goldHot;
+const FACE = COLORS.foam;
+const FACE_DIM = COLORS.sage;
 
 function PixelIcon({ id, dim }: { id: string; dim: boolean }) {
   const rows = ICONS[id];
@@ -138,7 +139,7 @@ export function UpgradeTree({
           const p = progress[n.id];
           const open = parentsOwned(n, progress);
           const isSel = selected === n.id;
-          let border = LOCK;
+          let border: string = LOCK;
           if (isSel) border = SELECT;
           else if (p.owned || open) border = LINE;
           return (
@@ -150,7 +151,7 @@ export function UpgradeTree({
                 left: n.x,
                 top: n.y,
                 borderColor: border,
-                background: p.owned ? "#101810" : "#050505",
+                background: p.owned ? COLORS.ink2 : COLORS.ink,
               }}
               onClick={() => setSelected(n.id)}
             >

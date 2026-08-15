@@ -4,6 +4,7 @@ import { MAIN_PAD, minionsOnStation, padById } from "../game/pads.ts";
 import { COLORS, HEIGHT, WIDTH } from "../game/view.ts";
 import { fadeOnInk, fillDisc, fillRing, fillSweepRing } from "./pixelDraw.ts";
 import { hitPad, pointerToCanvas } from "./pointer.ts";
+import { drawSky } from "./sky.ts";
 
 const MOSS_IN = 32;
 const MOSS_OUT = 34;
@@ -41,8 +42,8 @@ function drawBeat(
   const pulseR = Math.round(PULSE_R0 + near * (PULSE_R1 - PULSE_R0));
   const pipR = Math.max(1, Math.round(PIP_R0 + near * (PIP_R1 - PIP_R0)));
 
-  ctx.fillStyle = fadeOnInk(color, 0.08 + near * 0.22);
-  fillDisc(ctx, cx, cy, pulseR);
+  ctx.fillStyle = fadeOnInk(color, 0.16 + near * 0.28);
+  fillRing(ctx, cx, cy, pulseR - 2, pulseR);
   ctx.fillStyle = COLORS.moss;
   fillRing(ctx, cx, cy, MOSS_IN, MOSS_OUT);
   ctx.fillStyle = color;
@@ -103,8 +104,7 @@ export function Playfield({ game }: { game: Game }) {
         if (p.life <= 0) specks.splice(i, 1);
       }
 
-      ctx.fillStyle = COLORS.ink;
-      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      drawSky(ctx, elapsed);
 
       const pads = g.pads(now);
       for (const pad of pads) {
