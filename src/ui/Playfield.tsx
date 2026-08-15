@@ -167,60 +167,61 @@ export function Playfield({ game }: { game: Game }) {
 
     raf = requestAnimationFrame(tick);
 
+    const uiControl = (t: EventTarget | null) =>
+      t instanceof Element && !!t.closest("button, .tree");
+
+    const onCanvas = (e: PointerEvent) => {
+      const r = canvas.getBoundingClientRect();
+      return (
+        e.clientX >= r.left &&
+        e.clientX <= r.right &&
+        e.clientY >= r.top &&
+        e.clientY <= r.bottom
+      );
+    };
+
     const padAt = (e: PointerEvent) => {
       const { x, y } = pointerToCanvas(canvas, e.clientX, e.clientY);
       return hitPad(gameRef.current.pads(), x, y);
     };
 
-    const pressAt = (e: PointerEvent) => {
-      const id = padAt(e);
-      if (!id) return;
-      const g = gameRef.current;
-      if (!g.snapshot().running && id === MAIN_PAD.id) {
-        g.start();
-        return;
-      }
-      g.press(id);
-    };
-
     const onPointerDown = (e: PointerEvent) => {
       if (!e.isPrimary) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (uiControl(e.target) || !onCanvas(e)) return;
       e.preventDefault();
-      canvas.setPointerCapture(e.pointerId);
-      pressAt(e);
+      const id = padAt(e);
+      if (!id) return;
+      const g = gameRef.current;
+      if (!g.snapshot().running && id === MAIN_PAD.id) g.start();
+      else g.press(id);
     };
 
     const onPointerMove = (e: PointerEvent) => {
-      if (!e.isPrimary) return;
-      if (e.pointerType === "mouse") {
-        canvas.style.cursor = padAt(e) ? "pointer" : "default";
-      }
+      if (!e.isPrimary || e.pointerType !== "mouse") return;
+      canvas.style.cursor = onCanvas(e) && padAt(e) ? "pointer" : "default";
     };
 
-    const onPointerUp = (e: PointerEvent) => {
-      if (!e.isPrimary) return;
-      e.preventDefault();
-      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
-    };
-
-    const onPointerCancel = (e: PointerEvent) => {
-      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+    const onPointerUp = () => {
       canvas.style.cursor = "default";
     };
 
-    const pointerOpts: AddEventListenerOptions = { passive: false };
-    canvas.addEventListener("pointerdown", onPointerDown, pointerOpts);
-    canvas.addEventListener("pointermove", onPointerMove, pointerOpts);
-    canvas.addEventListener("pointerup", onPointerUp, pointerOpts);
-    canvas.addEventListener("pointercancel", onPointerCancel, pointerOpts);
+    const onPointerCancel = () => {
+      canvas.style.cursor = "default";
+    };
+
+    const opts: AddEventListenerOptions = { capture: true, passive: false };
+    window.addEventListener("pointerdown", onPointerDown, opts);
+    window.addEventListener("pointermove", onPointerMove, opts);
+    window.addEventListener("pointerup", onPointerUp, opts);
+    window.addEventListener("pointercancel", onPointerCancel, opts);
 
     return () => {
       cancelAnimationFrame(raf);
-      canvas.removeEventListener("pointerdown", onPointerDown, pointerOpts);
-      canvas.removeEventListener("pointermove", onPointerMove, pointerOpts);
-      canvas.removeEventListener("pointerup", onPointerUp, pointerOpts);
-      canvas.removeEventListener("pointercancel", onPointerCancel, pointerOpts);
+      window.removeEventListener("pointerdown", onPointerDown, opts);
+      window.removeEventListener("pointermove", onPointerMove, opts);
+      window.removeEventListener("pointerup", onPointerUp, opts);
+      window.removeEventListener("pointercancel", onPointerCancel, opts);
     };
   }, []);
 
