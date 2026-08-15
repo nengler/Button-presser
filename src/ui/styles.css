@@ -64,6 +64,7 @@ body,
 .playfield {
   position: absolute;
   inset: 0;
+  touch-action: none;
 }
 
 .playfield canvas {
@@ -72,15 +73,8 @@ body,
   height: 100% !important;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
+  /* Paint only — iOS drops pointer events on <canvas>, so the playfield div handles taps. */
   pointer-events: none;
-}
-
-.pad-hit {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  touch-action: none;
-  cursor: default;
 }
 
 .brand,

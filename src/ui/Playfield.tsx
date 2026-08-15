@@ -90,7 +90,6 @@ function spawnSparks(specks: Speck[], x: number, y: number) {
 
 export function Playfield({ game }: { game: Game }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const hitLayerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef(game);
   gameRef.current = game;
 
@@ -169,15 +168,13 @@ export function Playfield({ game }: { game: Game }) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const padAt = (clientX: number, clientY: number) => {
-    const hit = hitLayerRef.current;
-    if (!hit) return null;
-    const { x, y } = clientPos(hit, clientX, clientY);
+  const padAt = (el: HTMLElement, clientX: number, clientY: number) => {
+    const { x, y } = clientPos(el, clientX, clientY);
     return hitPad(gameRef.current.pads(), x, y);
   };
 
-  const pressAt = (clientX: number, clientY: number) => {
-    const id = padAt(clientX, clientY);
+  const pressAt = (el: HTMLElement, clientX: number, clientY: number) => {
+    const id = padAt(el, clientX, clientY);
     if (!id) return;
     const g = gameRef.current;
     if (!g.snapshot().running && id === MAIN_PAD.id) {
@@ -188,27 +185,23 @@ export function Playfield({ game }: { game: Game }) {
   };
 
   return (
-    <>
-      <div className="playfield">
-        <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} />
-      </div>
-      {/* Sibling overlay above HUD text so iOS can hit the ring; canvas pointer events are flaky. */}
-      <div
-        ref={hitLayerRef}
-        className="pad-hit"
-        onPointerDown={(e) => {
-          if (e.button !== 0 && e.pointerType === "mouse") return;
-          e.preventDefault();
-          pressAt(e.clientX, e.clientY);
-        }}
-        onPointerMove={(e) => {
-          const hit = hitLayerRef.current;
-          if (hit) hit.style.cursor = padAt(e.clientX, e.clientY) ? "pointer" : "default";
-        }}
-        onPointerLeave={() => {
-          if (hitLayerRef.current) hitLayerRef.current.style.cursor = "default";
-        }}
-      />
-    </>
+    <div
+      className="playfield"
+      onPointerDown={(e) => {
+        if (e.button !== 0 && e.pointerType === "mouse") return;
+        e.preventDefault();
+        pressAt(e.currentTarget, e.clientX, e.clientY);
+      }}
+      onPointerMove={(e) => {
+        e.currentTarget.style.cursor = padAt(e.currentTarget, e.clientX, e.clientY)
+          ? "pointer"
+          : "default";
+      }}
+      onPointerLeave={(e) => {
+        e.currentTarget.style.cursor = "default";
+      }}
+    >
+      <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} />
+    </div>
   );
 }
