@@ -1,10 +1,12 @@
-import { useState, type CSSProperties } from "react";
-import type { GameSnapshot } from "../game/Game.ts";
-import { COLORS } from "../game/view.ts";
-import { useLerpedScore } from "./hooks/useLerpedScore.ts";
-
-const SCORE_X = 10;
-const SCORE_Y = 6;
+import { useState } from "react";
+import type { GameSnapshot } from "../../game/Game.ts";
+import { buttonCenter } from "../../game/buttons.ts";
+import { COLORS } from "../../game/view.ts";
+import { useLerpedScore } from "../hooks/useLerpedScore.ts";
+import "./index.css";
+import GradePuff from "./GradePuff.tsx";
+import { Chip, Puff } from "./types.ts";
+import FlyChip from "./Chip.tsx";
 
 function gradeColor(grade: string): string {
   switch (grade) {
@@ -25,59 +27,7 @@ function gradeColor(grade: string): string {
   }
 }
 
-type Chip = {
-  id: number;
-  pts: number;
-  color: string;
-  x0: number;
-  y0: number;
-};
-
-type Puff = {
-  id: number;
-  label: string;
-  color: string;
-  x: number;
-  y: number;
-};
-
-function FlyChip({ chip, onLand }: { chip: Chip; onLand: (id: number) => void }) {
-  const style: CSSProperties & { "--x0": string; "--y0": string; "--x1": string; "--y1": string } =
-    {
-      color: chip.color,
-      "--x0": `${chip.x0}px`,
-      "--y0": `${chip.y0}px`,
-      "--x1": `${SCORE_X}px`,
-      "--y1": `${SCORE_Y}px`,
-    };
-  return (
-    <div
-      className="score-chip"
-      style={style}
-      onAnimationEnd={function () {
-        onLand(chip.id);
-      }}
-    >
-      +{chip.pts}
-    </div>
-  );
-}
-
-function GradePuff({ puff, onDone }: { puff: Puff; onDone: (id: number) => void }) {
-  return (
-    <div
-      className="grade-puff"
-      style={{ left: puff.x, top: puff.y, color: puff.color }}
-      onAnimationEnd={function () {
-        onDone(puff.id);
-      }}
-    >
-      {puff.label}
-    </div>
-  );
-}
-
-export function Hud({ snap, onTree }: { snap: GameSnapshot; onTree: () => void }) {
+export function Hud({ snap, onShop }: { snap: GameSnapshot; onShop: () => void }) {
   const [chips, setChips] = useState<Chip[]>([]);
   const [puffs, setPuffs] = useState<Puff[]>([]);
   const [pop, setPop] = useState(false);
@@ -152,8 +102,8 @@ export function Hud({ snap, onTree }: { snap: GameSnapshot; onTree: () => void }
 
   return (
     <>
-      <button type="button" className="tree-open" onClick={onTree}>
-        TREE
+      <button type="button" className="open-shop" onClick={onShop}>
+        SHOP
       </button>
 
       <div className="stats">
@@ -165,11 +115,18 @@ export function Hud({ snap, onTree }: { snap: GameSnapshot; onTree: () => void }
         >
           SCR {scoreText}
         </span>
-        <span key={snap.streak} className="stat nudge">
-          STR {snap.streak}
-        </span>
         {snap.stars > 0 ? <span className="stat">STAR {snap.stars}</span> : null}
       </div>
+
+      {snap.buttonStreaks.map(function (button, i) {
+        if (button.streak <= 0) return null;
+        const pos = buttonCenter(i, snap.buttonStreaks.length);
+        return (
+          <span key={button.id} className="btn-streak" style={{ left: pos.x, top: pos.y + 36 }}>
+            {button.streak}
+          </span>
+        );
+      })}
 
       {puffs.map(function (puff) {
         return (

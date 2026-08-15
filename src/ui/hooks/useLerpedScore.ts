@@ -48,7 +48,7 @@ function createLerpStore(initial: number): LerpStore {
   return {
     subscribe(onStoreChange) {
       listeners.add(onStoreChange);
-      return function () {
+      return () => {
         listeners.delete(onStoreChange);
         if (listeners.size === 0) stop();
       };

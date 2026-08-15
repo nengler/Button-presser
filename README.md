@@ -31,17 +31,17 @@ npm run electron   # desktop window (production build)
 | `npm start`        | Vite dev server                          |
 | `npm run build`    | Typecheck + Electron main + Vite `dist/` |
 | `npm run electron` | Build + open Electron                    |
-| `npm run smoke`    | Timing/scoring checks                    |
+| `npm test`         | Game, save, and pointer checks           |
 | `npm run preview`  | Serve the production build               |
 
 ## How to play
 
 1. Click a ring or press Space on a beat. The first hit scores.
 2. Keep hitting rings / Space on each beat.
-3. Grades: perfect → great → good → ok → miss. Misses break your streak.
+3. Grades: perfect → great → good → ok → miss. A miss or a skipped beat breaks that button's streak. Other buttons keep theirs.
 4. Open **TREE** to buy upgrades. Paths gate later nodes. Progress saves in `localStorage`.
 
-EVERY is the root: bonus points every few successful hits (more often and bigger as you rank it up). That unlocks MULT, FOCUS, and PERF. SHIELD ignores a miss without breaking streak. CLUTCH pays extra on the hit after a miss. MULT and FOCUS merge into STAR (helpers that tap leftover beats you miss). Stars start slow and late — buy PULSE, AIM, and SHARE so they fire more often, closer to the beat, and with a cut of your scoring upgrades. BTNS makes extra buttons worth more. Extra buttons: a 1.5s timer, a 3s double-tap, and a 0.75s button that only scores every two hits in a row.
+EVERY is the root. Scoring goes EVERY → MULT → FOCUS → PERF. Side branches: EVERY also opens the 1.5s extra button; MULT opens COMBO → TWIN (double-tap) → BTNS → STAR; FOCUS opens TEMPO → PAIR (0.75s, two hits in a row). STAR opens PULSE and AIM; PULSE opens SHARE. Stars start slow and late — PULSE, AIM, and SHARE make them fire more often, closer to the beat, and with a cut of your scoring upgrades. BTNS makes extra buttons pay more.
 
 ## Layout
 
@@ -56,7 +56,7 @@ src/
 ## Extending
 
 - Upgrades: `src/game/upgrades.ts`
-- Tree layout: `src/ui/upgradeTree.ts`
+- Tree layout: `src/ui/UpgradeTree/index.ts`
 - Buttons: `src/game/buttons.ts` (`EXTRA_BUTTONS` — stage-pixel `x`/`y`, timer, `kind`, tree slot, 8×8 `icon`)
 - Scoring: `src/game/timing.ts`
 - Playfield drawing: `src/ui/pixelDraw.ts` (stage pixels, Y down)

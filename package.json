@@ -13,11 +13,13 @@
     "electron": "npm run build && electron .",
     "preview": "vite preview",
     "clean": "rm -rf dist dist-electron",
-    "smoke": "tsx scripts/smoke.mjs",
+    "test": "tsx --test src/**/*.test.ts",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "knip": "knip"
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -30,6 +32,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "electron": "^43.4.0",
     "eslint-plugin-perfectionist": "^5.10.1",
+    "knip": "^6.32.2",
     "oxfmt": "^0.63.0",
     "oxlint": "^1.78.0",
     "oxlint-tsgolint": "^7.0.2001",

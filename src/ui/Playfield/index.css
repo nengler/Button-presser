@@ -1,0 +1,13 @@
+.playfield {
+  position: absolute;
+  inset: 0;
+}
+
+.playfield canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  touch-action: none;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}

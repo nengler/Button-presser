@@ -1,0 +1,492 @@
+.shop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.shop.leave {
+  pointer-events: none;
+}
+
+.shop-head {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 3px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--foam);
+  z-index: 1;
+  animation: shop-bar-in 0.28s ease-out both;
+}
+
+.shop.leave .shop-head {
+  animation: shop-bar-out 0.28s ease-in both;
+  animation-delay: calc(var(--maxd, 0) * 70ms + 90ms);
+}
+
+.shop-brand {
+  color: var(--gold-hot);
+  animation: shop-idle 2.4s steps(2, end) infinite;
+}
+
+.shop-head .gold {
+  color: var(--gold-hot);
+  margin-left: auto;
+}
+
+.shop-back {
+  width: 36px;
+  height: 14px;
+  padding: 0;
+  font-size: 7px;
+  background: var(--ink2);
+  border: 1px solid var(--gold);
+  color: var(--gold-hot);
+}
+
+.shop-back:hover {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.shop-map {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18px;
+  bottom: 32px;
+  z-index: 1;
+}
+
+@keyframes shop-idle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(1px);
+  }
+}
+
+@keyframes shop-bar-in {
+  from {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shop-bar-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+}
+
+@keyframes shop-dock-in {
+  from {
+    transform: translateY(32px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes shop-dock-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(32px);
+  }
+}
+
+@keyframes shop-node-in {
+  0% {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shop-node-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+.shop-wires {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+  shape-rendering: crispEdges;
+}
+
+.shop-wires line {
+  fill: none;
+  stroke-linecap: butt;
+}
+
+.shop-wires path {
+  fill: none;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  stroke-miterlimit: 2;
+  stroke-dasharray: 1 1;
+  animation: shop-wire-draw 0.28s ease-out both;
+  animation-delay: calc(var(--d, 0) * 70ms + 40ms);
+}
+
+.shop.leave .shop-wires path {
+  animation: shop-wire-draw-out 0.22s ease-in both;
+  animation-delay: calc((var(--maxd, 0) - var(--d, 0)) * 70ms + 60ms);
+}
+
+.shop-wire-ink {
+  stroke: var(--ink);
+  stroke-width: 5;
+}
+
+.shop-wire-fill {
+  stroke-width: 3;
+}
+
+.shop-wire-core {
+  stroke: var(--foam);
+  stroke-width: 1;
+}
+
+@keyframes shop-wire-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes shop-wire-draw-out {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 1;
+  }
+}
+
+.shop-spark {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: var(--foam);
+  pointer-events: none;
+  offset-rotate: 0deg;
+  offset-anchor: center;
+  animation: spark-path 1.5s steps(10, end) infinite;
+  animation-delay: calc(var(--d, 0) * 70ms + 320ms);
+}
+
+.shop.leave .shop-spark {
+  display: none;
+}
+
+@keyframes spark-path {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+.shop-fx {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 6;
+  image-rendering: pixelated;
+}
+
+.shop.leave .shop-fx {
+  display: none;
+}
+
+.shop-shine {
+  position: absolute;
+  inset: -2px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+  outline: 1px solid var(--foam);
+  background: var(--foam);
+  animation: shop-shine 0.7s ease-out forwards;
+}
+
+.shop-shine.open {
+  outline-color: var(--gold-hot);
+  background: var(--gold-hot);
+  animation-duration: 0.45s;
+}
+
+.shop-shine::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: -12px;
+  width: 4px;
+  height: 36px;
+  background: var(--gold-hot);
+  box-shadow: 2px 0 0 var(--foam);
+  transform: rotate(45deg);
+  animation: shop-gleam 0.55s ease-out both;
+}
+
+.shop-shine.open::after {
+  width: 3px;
+  animation-duration: 0.4s;
+}
+
+@keyframes shop-shine {
+  0% {
+    background: var(--foam);
+    opacity: 1;
+  }
+  28% {
+    background: transparent;
+    opacity: 1;
+  }
+  100% {
+    background: transparent;
+    outline-color: transparent;
+    opacity: 0;
+  }
+}
+
+@keyframes shop-gleam {
+  from {
+    transform: translate(-6px, -6px) rotate(45deg);
+  }
+  to {
+    transform: translate(22px, 22px) rotate(45deg);
+  }
+}
+
+.shop.leave .shop-shine {
+  display: none;
+}
+
+.shop-node {
+  position: absolute;
+  z-index: 1;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 2px solid var(--moss);
+  outline: 1px solid var(--ink);
+  background: var(--ink);
+  image-rendering: pixelated;
+  animation: shop-node-in 0.28s ease-out both;
+  animation-delay: calc(var(--d, 0) * 70ms + 90ms);
+}
+
+.shop-node.open {
+  box-shadow: 1px 1px 0 #0d2b45;
+}
+
+.shop-node.owned {
+  box-shadow:
+    1px 1px 0 #0d2b45,
+    inset 1px 1px 0 var(--gold-hot);
+}
+
+.shop-node.buyable {
+  animation:
+    shop-node-in 0.28s ease-out calc(var(--d, 0) * 70ms + 90ms) both,
+    node-buy 0.9s steps(2, end) calc(var(--d, 0) * 70ms + 380ms) infinite;
+}
+
+.shop.leave .shop-node,
+.shop.leave .shop-node.buyable {
+  animation: shop-node-out 0.28s ease-in both;
+  animation-delay: calc((var(--maxd, 0) - var(--d, 0)) * 70ms);
+}
+
+.shop-node.sel {
+  z-index: 2;
+}
+
+.shop-sel-ring {
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--foam);
+  pointer-events: none;
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+@keyframes node-buy {
+  0%,
+  100% {
+    box-shadow: 1px 1px 0 #0d2b45;
+  }
+  50% {
+    box-shadow:
+      -1px 0 0 var(--gold-hot),
+      1px 0 0 var(--gold-hot),
+      0 -1px 0 var(--gold-hot),
+      0 1px 0 var(--gold-hot);
+  }
+}
+
+.pix {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 8px;
+  height: 8px;
+}
+
+.pix i {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+}
+
+.shop-inspect {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  background: var(--ink2);
+  z-index: 2;
+  animation: shop-dock-in 0.28s ease-out both;
+  padding-top: 2px;
+}
+
+.shop.leave .shop-inspect {
+  animation: shop-dock-out 0.28s ease-in both;
+  animation-delay: calc(var(--maxd, 0) * 70ms + 90ms);
+}
+
+.shop-inspect::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: var(--gold);
+  width: 0;
+  animation: shop-inspect-before 0.22s ease-out both;
+  animation-delay: 200ms;
+}
+
+.shop.leave .shop-inspect::before {
+  animation: shop-inspect-before-out 0.22s ease-in both;
+  animation-delay: calc(var(--maxd, 0) * 70ms - 50ms);
+}
+
+@keyframes shop-inspect-before {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes shop-inspect-before-out {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0;
+  }
+}
+
+.shop-inspect.hot {
+  border-top-color: var(--gold-hot);
+  background: #544e68;
+}
+
+.shop-title {
+  font-size: 8px;
+  color: var(--gold-hot);
+}
+
+.shop-blurb {
+  margin-top: 2px;
+  font-size: 6px;
+  color: var(--foam);
+}
+
+.shop-buy {
+  width: auto;
+  min-width: 72px;
+  height: 22px;
+  padding: 0 6px;
+  font-size: 8px;
+  background: var(--gold);
+  color: var(--ink);
+  border: none;
+}
+
+.shop-buy:disabled {
+  background: var(--ink2);
+  color: var(--dim);
+}
+
+.reset {
+  background: none;
+  border: none;
+  color: var(--dim);
+  padding: 0;
+  height: 12px;
+}
+
+.reset:hover {
+  color: var(--gold-hot);
+}
+
+.lvl {
+  color: var(--gold);
+  font-size: 6px;
+}

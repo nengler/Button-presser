@@ -7,8 +7,6 @@ export type UpgradeId =
   | "tempo"
   | "combo"
   | "perfectPay"
-  | "shield"
-  | "recovery"
   | "starRate"
   | "starAim"
   | "starSkill"
@@ -35,7 +33,7 @@ export interface GameSave {
   unlockedPads: string[];
 }
 
-export type Grade = "perfect" | "great" | "good" | "ok" | "miss" | "set";
+type Grade = "perfect" | "great" | "good" | "ok" | "miss" | "set";
 
 export interface PressResult {
   errorMs: number;
@@ -51,7 +49,7 @@ export type ButtonView = { id: string; phase: number; mark: 0 | 1 | 2 };
 
 export type GameSnapshot = {
   score: number;
-  streak: number;
+  buttonStreaks: { id: string; streak: number }[];
   interval: number;
   phase: number;
   lastResult: PressResult | null;

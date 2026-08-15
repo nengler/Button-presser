@@ -1,4 +1,4 @@
-import { DOUBLE_GAP_MS, MAIN_BUTTON, type ButtonDef } from "./buttons.ts";
+import { type ButtonDef, DOUBLE_GAP_MS, MAIN_BUTTON } from "./buttons.ts";
 import { nearestBeatError, pairCompletes, withinDoubleGap } from "./timing.ts";
 import type { ButtonView, GameSave, PressResult } from "./types.ts";
 import { intervalMs, starShareFactor, windowMs } from "./upgrades.ts";
@@ -13,7 +13,6 @@ export type HitWorld = {
     fromStar: boolean;
     extraButton: boolean;
   }): PressResult;
-  protectStreak(streakBefore: number, fromStar: boolean): number;
 };
 
 export type PressAttempt =
@@ -43,6 +42,8 @@ export class Button {
   private pendingBeat = -1;
   private pendingErrorMs = 0;
   private lastSuccessBeat = -1;
+  /** Last beat the player actually hit. Stars and idle time do not advance this. */
+  private lastHitBeat = -1;
 
   constructor(args: { def: ButtonDef; origin: number }) {
     this.def = args.def;
@@ -79,17 +80,18 @@ export class Button {
     this.pendingBeat = -1;
     this.pendingErrorMs = 0;
     this.lastSuccessBeat = -1;
+    this.lastHitBeat = -1;
   }
 
   /** Timed-out double-tap. Caller treats this as a player miss. */
-  expirePending(now: number, world: HitWorld): PressResult | null {
+  expirePending(now: number): PressResult | null {
     if (this.pendingTapAt === null) return null;
     if (now - this.pendingTapAt <= DOUBLE_GAP_MS) return null;
     const beatIndex = this.pendingBeat;
     this.pendingTapAt = null;
     this.pendingBeat = -1;
     this.used.add(beatIndex);
-    this.streak = world.protectStreak(this.streak, false);
+    this.noteMiss(false);
     return {
       errorMs: DOUBLE_GAP_MS,
       points: 0,
@@ -105,6 +107,28 @@ export class Button {
     return dt >= 70 && dt <= DOUBLE_GAP_MS;
   }
 
+  /**
+   * If the next beat after the player's last hit can no longer score, the cycle was missed.
+   */
+  expireMissedBeats(now: number, upgrades: GameSave["upgrades"]): PressResult | null {
+    if (this.pendingTapAt !== null) return null;
+    if (this.streak <= 0 || this.lastHitBeat < 0) return null;
+    const interval = this.interval(upgrades);
+    const window = windowMs(upgrades.focus);
+    const nextBeat = this.lastHitBeat + 1;
+    const deadline = this.origin + nextBeat * interval + window;
+    if (now <= deadline) return null;
+    this.streak = 0;
+    this.lastSuccessBeat = -1;
+    return {
+      errorMs: window,
+      points: 0,
+      grade: "miss",
+      streak: 0,
+      beatIndex: nextBeat,
+    };
+  }
+
   /** Count a leftover beat toward this button's star cadence. True when the star should press. */
   noteStarBeat(beatIndex: number, period: number): boolean {
     if (this.starBeat === beatIndex || this.used.has(beatIndex)) return false;
@@ -118,6 +142,7 @@ export class Button {
 
   press(args: { now: number; fromStar: boolean; world: HitWorld }): PressAttempt {
     const { now, fromStar, world } = args;
+    this.expireMissedBeats(now, world.upgrades);
     const { errorMs, beatIndex } = this.nearest(now, world.upgrades);
 
     if (this.def.kind === "double" && !this.isMain) {
@@ -126,7 +151,7 @@ export class Button {
 
     if (this.used.has(beatIndex)) {
       if (!this.isMain) return { ok: false };
-      this.streak = world.protectStreak(this.streak, fromStar);
+      this.noteMiss(fromStar);
       return {
         ok: true,
         ping: true,
@@ -147,13 +172,12 @@ export class Button {
 
     const result = world.evaluateHit({
       errorMs,
-      streakBefore: this.streak,
+      streakBefore: fromStar ? 0 : this.streak,
       beatIndex,
       fromStar,
       extraButton: !this.isMain,
     });
-    if (this.def.kind === "pair") this.applyPair(result);
-    else this.streak = result.streak;
+    this.takeHit(result, fromStar);
 
     return {
       ok: true,
@@ -183,12 +207,12 @@ export class Button {
         trimUsed(this.used, heldBeat);
         const result = world.evaluateHit({
           errorMs: heldError,
-          streakBefore: this.streak,
+          streakBefore: fromStar ? 0 : this.streak,
           beatIndex: heldBeat,
           fromStar,
           extraButton: true,
         });
-        this.streak = result.streak;
+        this.takeHit(result, fromStar);
         return {
           ok: true,
           ping: true,
@@ -200,7 +224,7 @@ export class Button {
       this.pendingTapAt = null;
       this.pendingBeat = -1;
       this.used.add(heldBeat >= 0 ? heldBeat : beatIndex);
-      this.streak = world.protectStreak(this.streak, fromStar);
+      this.noteMiss(fromStar);
       return {
         ok: true,
         ping: true,
@@ -223,7 +247,7 @@ export class Button {
     if (Math.abs(errorMs) >= windowMs(focus)) {
       this.used.add(beatIndex);
       trimUsed(this.used, beatIndex);
-      this.streak = world.protectStreak(this.streak, fromStar);
+      this.noteMiss(fromStar);
       return {
         ok: true,
         ping: true,
@@ -242,6 +266,7 @@ export class Button {
     this.pendingTapAt = now;
     this.pendingBeat = beatIndex;
     this.pendingErrorMs = errorMs;
+    if (!fromStar) this.lastHitBeat = beatIndex;
     return {
       ok: true,
       ping: true,
@@ -257,19 +282,32 @@ export class Button {
     };
   }
 
-  private applyPair(result: PressResult): void {
+  private takeHit(result: PressResult, fromStar: boolean): void {
+    if (this.def.kind === "pair") this.applyPair(result, fromStar);
+    else if (!fromStar) this.streak = result.grade === "miss" ? 0 : result.streak;
+    else result.streak = this.streak;
+    if (!fromStar && result.grade !== "miss") this.lastHitBeat = result.beatIndex;
+  }
+
+  private noteMiss(fromStar: boolean): void {
+    if (fromStar) return;
+    this.streak = 0;
+  }
+
+  private applyPair(result: PressResult, fromStar: boolean): void {
     if (result.grade === "miss") {
-      this.streak = result.streak;
       this.lastSuccessBeat = -1;
+      if (!fromStar) this.streak = 0;
+      result.streak = this.streak;
       return;
     }
+    if (!fromStar) this.streak = result.streak;
+    else result.streak = this.streak;
     if (pairCompletes(this.lastSuccessBeat, result.beatIndex)) {
-      this.streak = result.streak;
       this.lastSuccessBeat = -1;
       return;
     }
     this.lastSuccessBeat = result.beatIndex;
-    this.streak = result.streak;
     result.points = 0;
     result.grade = "set";
   }

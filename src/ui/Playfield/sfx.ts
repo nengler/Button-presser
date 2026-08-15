@@ -1,5 +1,5 @@
-import type { PressResult } from "../game/types.ts";
-import { windowMs } from "../game/upgrades.ts";
+import type { PressResult } from "../../game/types.ts";
+import { windowMs } from "../../game/upgrades.ts";
 
 let ctx: AudioContext | null = null;
 

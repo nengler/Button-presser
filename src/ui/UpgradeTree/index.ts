@@ -1,15 +1,15 @@
-import { UPGRADE_DEFS } from "../game/upgrades.ts";
-import type { UpgradeId } from "../game/types.ts";
-import { COLORS } from "../game/view.ts";
+import { UPGRADE_DEFS } from "../../game/upgrades.ts";
+import type { UpgradeId } from "../../game/types.ts";
+import { COLORS } from "../../game/view.ts";
 import {
   EXTRA_BUTTONS,
-  STAR_COST,
-  STAR_MAX,
   extraButtonById,
-  isExtraButtonId,
   type ExtraButtonId,
   type Glyph,
-} from "../game/buttons.ts";
+  isExtraButtonId,
+  STAR_MAX,
+  starCost,
+} from "../../game/buttons.ts";
 
 export const NODE = 16;
 
@@ -20,8 +20,6 @@ export const NODE_TINT: Record<string, string> = {
   combo: COLORS.gold,
   tempo: COLORS.goldHot,
   perfectPay: COLORS.foam,
-  shield: COLORS.sage,
-  recovery: COLORS.miss,
   star: COLORS.foam,
   starRate: COLORS.foam,
   starAim: COLORS.goldHot,
@@ -31,37 +29,6 @@ export const NODE_TINT: Record<string, string> = {
   "pad-twin": COLORS.goldHot,
   "pad-pair": COLORS.miss,
 };
-
-/** Pixel specks behind the constellation. */
-export const TREE_STARS: { x: number; y: number; c: string; d: number }[] = [
-  { x: 8, y: 14, c: COLORS.foam, d: 0 },
-  { x: 28, y: 6, c: COLORS.goldHot, d: 1 },
-  { x: 52, y: 22, c: COLORS.gold, d: 2 },
-  { x: 70, y: 8, c: COLORS.foam, d: 0 },
-  { x: 118, y: 18, c: COLORS.goldHot, d: 1 },
-  { x: 134, y: 4, c: COLORS.gold, d: 2 },
-  { x: 176, y: 26, c: COLORS.foam, d: 0 },
-  { x: 198, y: 10, c: COLORS.gold, d: 1 },
-  { x: 244, y: 20, c: COLORS.goldHot, d: 2 },
-  { x: 268, y: 6, c: COLORS.foam, d: 0 },
-  { x: 300, y: 28, c: COLORS.gold, d: 1 },
-  { x: 14, y: 58, c: COLORS.goldHot, d: 2 },
-  { x: 46, y: 72, c: COLORS.foam, d: 0 },
-  { x: 62, y: 40, c: COLORS.gold, d: 1 },
-  { x: 108, y: 78, c: COLORS.goldHot, d: 2 },
-  { x: 168, y: 66, c: COLORS.foam, d: 0 },
-  { x: 188, y: 86, c: COLORS.gold, d: 1 },
-  { x: 236, y: 74, c: COLORS.goldHot, d: 0 },
-  { x: 258, y: 98, c: COLORS.foam, d: 2 },
-  { x: 292, y: 80, c: COLORS.gold, d: 1 },
-  { x: 310, y: 54, c: COLORS.goldHot, d: 0 },
-  { x: 6, y: 108, c: COLORS.gold, d: 1 },
-  { x: 38, y: 120, c: COLORS.foam, d: 2 },
-  { x: 96, y: 114, c: COLORS.goldHot, d: 0 },
-  { x: 154, y: 122, c: COLORS.gold, d: 1 },
-  { x: 220, y: 118, c: COLORS.foam, d: 2 },
-  { x: 280, y: 110, c: COLORS.goldHot, d: 0 },
-];
 
 /** 8×8 glyphs: X = on, . = off */
 export const ICONS: Record<string, Glyph> = {
@@ -155,26 +122,6 @@ export const ICONS: Record<string, Glyph> = {
     "........",
     "........",
   ],
-  shield: [
-    "..XXXX..",
-    ".X....X.",
-    "X......X",
-    "X......X",
-    "X......X",
-    ".X....X.",
-    "..XXXX..",
-    "........",
-  ],
-  recovery: [
-    "........",
-    "...XX...",
-    "..XXXX..",
-    ".XX..XX.",
-    "...XX...",
-    "...XX...",
-    "...XX...",
-    "........",
-  ],
   starSkill: [
     "........",
     ".XX..XX.",
@@ -209,11 +156,19 @@ export type TreeNode = {
   x: number;
   y: number;
   parents: TreeNodeId[];
+  /** Default: every parent. `any` opens after one parent is owned. */
+  require?: "any";
   title: string;
   blurb: string;
 };
 
-const UPGRADE_NODES: TreeNode[] = [
+const EXTRA_BUTTON_PARENTS: Record<ExtraButtonId, TreeNodeId[]> = {
+  "pad-slow": ["bonusHits"],
+  "pad-twin": ["combo"],
+  "pad-pair": ["tempo"],
+};
+
+const EARLY_NODES: TreeNode[] = [
   {
     id: "bonusHits",
     x: 8,
@@ -234,7 +189,7 @@ const UPGRADE_NODES: TreeNode[] = [
     id: "focus",
     x: 112,
     y: 108,
-    parents: ["bonusHits"],
+    parents: ["multiplier"],
     title: "FOCUS",
     blurb: "Wider timing window",
   },
@@ -242,17 +197,9 @@ const UPGRADE_NODES: TreeNode[] = [
     id: "perfectPay",
     x: 164,
     y: 108,
-    parents: ["bonusHits"],
+    parents: ["focus"],
     title: "PERF",
     blurb: "Perfect hits pay extra",
-  },
-  {
-    id: "shield",
-    x: 8,
-    y: 72,
-    parents: ["bonusHits"],
-    title: "SHIELD",
-    blurb: "Ignore misses without breaking streak",
   },
   {
     id: "combo",
@@ -260,7 +207,7 @@ const UPGRADE_NODES: TreeNode[] = [
     y: 72,
     parents: ["multiplier"],
     title: "COMBO",
-    blurb: "Streaks pay harder",
+    blurb: "Each button's streak pays harder",
   },
   {
     id: "tempo",
@@ -270,70 +217,64 @@ const UPGRADE_NODES: TreeNode[] = [
     title: "TEMPO",
     blurb: "Slower beat, easier settle",
   },
+];
+
+const BUTTON_NODES: TreeNode[] = EXTRA_BUTTONS.map(function (button) {
+  return {
+    id: button.id,
+    x: button.treeX,
+    y: button.treeY,
+    parents: EXTRA_BUTTON_PARENTS[button.id],
+    title: button.name,
+    blurb: button.blurb,
+  };
+});
+
+const LATE_NODES: TreeNode[] = [
   {
-    id: "recovery",
-    x: 164,
-    y: 72,
-    parents: ["perfectPay"],
-    title: "CLUTCH",
-    blurb: "The hit after a miss pays extra",
+    id: "padPay",
+    x: 112,
+    y: 36,
+    parents: ["pad-twin"],
+    title: "BTNS",
+    blurb: "Extra buttons earn more",
   },
   {
     id: "star",
-    x: 216,
-    y: 72,
-    parents: ["multiplier", "focus"],
+    x: 164,
+    y: 36,
+    parents: ["padPay"],
     title: "STAR",
     blurb: "Hires a star that taps leftover beats. Starts rare.",
   },
   {
-    id: "starSkill",
-    x: 164,
-    y: 36,
-    parents: ["star"],
-    title: "SHARE",
-    blurb: "Stars use a share of your scoring upgrades",
-  },
-  {
     id: "starRate",
-    x: 216,
-    y: 36,
+    x: 164,
+    y: 4,
     parents: ["star"],
     title: "PULSE",
     blurb: "Stars attempt leftover beats more often",
   },
   {
     id: "starAim",
-    x: 268,
-    y: 72,
+    x: 216,
+    y: 36,
     parents: ["star"],
     title: "AIM",
     blurb: "Stars tap closer to the beat",
   },
   {
-    id: "padPay",
-    x: 268,
-    y: 36,
-    parents: ["star"],
-    title: "BTNS",
-    blurb: "Extra buttons earn more",
+    id: "starSkill",
+    x: 112,
+    y: 4,
+    parents: ["starRate"],
+    title: "SHARE",
+    blurb: "Stars use a share of your scoring upgrades",
   },
 ];
 
-/** Bottom roots → top/right advanced, with a merge into star. */
-export const TREE_NODES: TreeNode[] = [
-  ...UPGRADE_NODES,
-  ...EXTRA_BUTTONS.map(function (button) {
-    return {
-      id: button.id,
-      x: button.treeX,
-      y: button.treeY,
-      parents: ["star"] as TreeNodeId[],
-      title: button.name,
-      blurb: button.blurb,
-    };
-  }),
-];
+/** Bottom roots → top/right advanced. Extra buttons fork off before stars. */
+export const TREE_NODES: TreeNode[] = [...EARLY_NODES, ...BUTTON_NODES, ...LATE_NODES];
 
 export type NodeProgress = {
   level: number;
@@ -353,7 +294,7 @@ export function nodeProgress(
     return {
       level: stars,
       max: STAR_MAX,
-      cost: stars >= STAR_MAX ? null : STAR_COST,
+      cost: stars >= STAR_MAX ? null : starCost(stars),
       owned: stars > 0,
       maxed: stars >= STAR_MAX,
     };
@@ -382,7 +323,9 @@ export function nodeProgress(
 }
 
 export function parentsOwned(node: TreeNode, progress: Record<TreeNodeId, NodeProgress>): boolean {
-  return node.parents.every(function (p) {
-    return progress[p]?.owned;
-  });
+  if (node.parents.length === 0) return true;
+  function owned(p: TreeNodeId): boolean {
+    return progress[p]?.owned === true;
+  }
+  return node.require === "any" ? node.parents.some(owned) : node.parents.every(owned);
 }

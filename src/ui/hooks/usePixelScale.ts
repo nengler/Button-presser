@@ -7,7 +7,7 @@ export function containScale(): number {
 
 function subscribe(onStoreChange: () => void): () => void {
   window.addEventListener("resize", onStoreChange);
-  return function () {
+  return () => {
     window.removeEventListener("resize", onStoreChange);
   };
 }

@@ -10,7 +10,7 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
       return `Every ${bonusHitPeriod(n)} hits, +${bonusHitPayout(n)} points`;
     },
     cost(level) {
-      return Math.floor(80 * Math.pow(1.7, level));
+      return upgradeCost(1800, 1.85, level);
     },
     maxLevel: 7,
   },
@@ -22,7 +22,7 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
       return `Hits pay ×${scoreMultiplier(Math.max(1, level)).toFixed(2)}`;
     },
     cost(level) {
-      return Math.floor(90 * Math.pow(1.75, level));
+      return upgradeCost(2800, 1.75, level);
     },
     maxLevel: 10,
   },
@@ -34,7 +34,7 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
       return `Score if within ${windowMs(Math.max(1, level))}ms`;
     },
     cost(level) {
-      return Math.floor(110 * Math.pow(1.8, level));
+      return upgradeCost(3200, 1.85, level);
     },
     maxLevel: 8,
   },
@@ -46,20 +46,20 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
       return `Main beat every ${intervalMs(Math.max(1, level))}ms`;
     },
     cost(level) {
-      return Math.floor(130 * Math.pow(1.8, level));
+      return upgradeCost(3600, 1.9, level);
     },
     maxLevel: 5,
   },
   combo: {
     id: "combo",
     name: "Combo Chain",
-    description: "Streaks multiply your score harder.",
+    description: "Each button's streak multiplies its hits harder.",
     effect(level) {
       const n = Math.max(1, level);
       return `+${Math.round((0.04 + n * 0.02) * 100)}% per streak hit`;
     },
     cost(level) {
-      return Math.floor(120 * Math.pow(1.8, level));
+      return upgradeCost(3400, 1.9, level);
     },
     maxLevel: 8,
   },
@@ -71,34 +71,9 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
       return `Perfects ×${perfectPayFactor(Math.max(1, level)).toFixed(2)}`;
     },
     cost(level) {
-      return Math.floor(140 * Math.pow(1.8, level));
+      return upgradeCost(3500, 1.9, level);
     },
     maxLevel: 8,
-  },
-  shield: {
-    id: "shield",
-    name: "Shield",
-    description: "Each Start, ignore that many misses without breaking streak.",
-    effect(level) {
-      const n = Math.max(1, level);
-      return `${shieldCharges(n)} miss${shieldCharges(n) === 1 ? "" : "es"} ignored per Start`;
-    },
-    cost(level) {
-      return Math.floor(150 * Math.pow(1.85, level));
-    },
-    maxLevel: 3,
-  },
-  recovery: {
-    id: "recovery",
-    name: "Clutch",
-    description: "The hit after a miss is worth extra.",
-    effect(level) {
-      return `After a miss, next hit ×${recoveryFactor(Math.max(1, level)).toFixed(2)}`;
-    },
-    cost(level) {
-      return Math.floor(125 * Math.pow(1.8, level));
-    },
-    maxLevel: 5,
   },
   starRate: {
     id: "starRate",
@@ -108,7 +83,7 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
       return `Stars try leftover beats every ${starAttemptEvery(Math.max(1, level))}`;
     },
     cost(level) {
-      return Math.floor(180 * Math.pow(1.85, level));
+      return upgradeCost(6500, 2, level);
     },
     maxLevel: 5,
   },
@@ -120,7 +95,7 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
       return `Stars tap ~${starAimErrorMs(Math.max(1, level))}ms late`;
     },
     cost(level) {
-      return Math.floor(180 * Math.pow(1.85, level));
+      return upgradeCost(7000, 2, level);
     },
     maxLevel: 5,
   },
@@ -132,7 +107,7 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
       return `Stars use ${Math.round(starShareFactor(Math.max(1, level)) * 100)}% of your scoring upgrades`;
     },
     cost(level) {
-      return Math.floor(200 * Math.pow(1.85, level));
+      return upgradeCost(8000, 2.05, level);
     },
     maxLevel: 5,
   },
@@ -144,11 +119,15 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
       return `Extra buttons ×${padPayFactor(Math.max(1, level)).toFixed(2)}`;
     },
     cost(level) {
-      return Math.floor(160 * Math.pow(1.8, level));
+      return upgradeCost(6000, 1.95, level);
     },
     maxLevel: 6,
   },
 };
+
+function upgradeCost(base: number, growth: number, level: number): number {
+  return Math.floor(base * Math.pow(growth, level));
+}
 
 export function emptyUpgrades(): Record<UpgradeId, number> {
   return {
@@ -158,8 +137,6 @@ export function emptyUpgrades(): Record<UpgradeId, number> {
     tempo: 0,
     combo: 0,
     perfectPay: 0,
-    shield: 0,
-    recovery: 0,
     starRate: 0,
     starAim: 0,
     starSkill: 0,
@@ -168,10 +145,10 @@ export function emptyUpgrades(): Record<UpgradeId, number> {
 }
 
 /** Base beat interval in ms before tempo upgrades. */
-export const BASE_INTERVAL_MS = 1000;
+const BASE_INTERVAL_MS = 1000;
 
 /** Max absolute error (ms) that still scores, before focus upgrades. */
-export const BASE_WINDOW_MS = 180;
+const BASE_WINDOW_MS = 180;
 
 /** Beats a star skips between leftover attempts, by Pulse level. */
 const STAR_PERIOD = [8, 6, 4, 3, 2, 1] as const;
@@ -209,20 +186,12 @@ export function perfectPayFactor(level: number): number {
   return 1 + level * 0.25;
 }
 
-export function recoveryFactor(level: number): number {
-  return 1 + level * 0.3;
-}
-
 export function padPayFactor(level: number): number {
   return 1 + level * 0.25;
 }
 
 export function starShareFactor(level: number): number {
   return Math.min(1, Math.max(0, level) * 0.2);
-}
-
-export function shieldCharges(level: number): number {
-  return Math.max(0, level);
 }
 
 export function starAttemptEvery(rateLevel: number): number {

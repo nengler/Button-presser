@@ -1,4 +1,4 @@
-import { buttonById } from "../game/buttons.ts";
+import { buttonCenter } from "../game/buttons.ts";
 
 export const HIT_R = 43;
 
@@ -32,9 +32,11 @@ export function pointerToCanvas(
 export function hitButton(buttons: { id: string }[], sx: number, sy: number): string | null {
   let best: { id: string; d2: number } | null = null;
   const r2 = HIT_R * HIT_R;
-  for (const button of buttons) {
-    const def = buttonById(button.id);
-    const d2 = (sx - def.x) ** 2 + (sy - def.y) ** 2;
+  const n = buttons.length;
+  for (let i = 0; i < n; i++) {
+    const button = buttons[i]!;
+    const pos = buttonCenter(i, n);
+    const d2 = (sx - pos.x) ** 2 + (sy - pos.y) ** 2;
     if (d2 > r2) continue;
     if (!best || d2 < best.d2) best = { id: button.id, d2 };
   }

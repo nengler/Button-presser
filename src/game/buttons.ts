@@ -1,8 +1,11 @@
 import type { ButtonKind } from "./types.ts";
-import { COLORS } from "./view.ts";
+import { COLORS, HEIGHT, WIDTH } from "./view.ts";
 
-export const STAR_COST = 220;
 export const STAR_MAX = 4;
+
+export function starCost(owned: number): number {
+  return Math.floor(8000 * Math.pow(2, owned));
+}
 
 /** Max gap between the two taps of a double button. */
 export const DOUBLE_GAP_MS = 280;
@@ -16,11 +19,21 @@ export type ButtonDef = {
   kind: ButtonKind;
   interval: number;
   cost: number;
-  /** Center on the 320×180 stage (pixels, Y down). */
-  x: number;
-  y: number;
   color: string;
 };
+
+/** Vertical center of the playfield row. */
+export const BUTTON_Y = Math.round(HEIGHT / 2);
+
+/** Center-to-center gap. Leaves a little air between rims. */
+export const BUTTON_GAP = 80;
+
+export function buttonCenter(index: number, count: number): { x: number; y: number } {
+  const n = Math.max(1, count);
+  const span = (n - 1) * BUTTON_GAP;
+  const x = Math.round(WIDTH * 0.5 - span * 0.5 + index * BUTTON_GAP);
+  return { x, y: BUTTON_Y };
+}
 
 export type ExtraButtonDef = ButtonDef & {
   treeX: number;
@@ -35,24 +48,20 @@ export const MAIN_BUTTON: ButtonDef = {
   kind: "beat",
   interval: 1000,
   cost: 0,
-  x: 88,
-  y: 88,
   color: COLORS.gold,
 };
 
-/** Playfield, unlocks, and skill tree all read this list. */
+/** Playfield, unlocks, and shop all read this list. */
 export const EXTRA_BUTTONS = [
   {
     id: "pad-slow",
     name: "1.5s",
     kind: "beat",
     interval: 1500,
-    cost: 280,
-    x: 176,
-    y: 48,
+    cost: 12000,
     color: COLORS.sage,
-    treeX: 164,
-    treeY: 4,
+    treeX: 8,
+    treeY: 72,
     blurb: "Second button on a 1.5s timer",
     icon: [
       "........",
@@ -70,12 +79,10 @@ export const EXTRA_BUTTONS = [
     name: "TWIN",
     kind: "double",
     interval: 3000,
-    cost: 420,
-    x: 256,
-    y: 92,
+    cost: 20000,
     color: COLORS.goldHot,
-    treeX: 216,
-    treeY: 4,
+    treeX: 60,
+    treeY: 36,
     blurb: "Double-tap each 3s beat",
     icon: [
       "........",
@@ -93,12 +100,10 @@ export const EXTRA_BUTTONS = [
     name: "PAIR",
     kind: "pair",
     interval: 750,
-    cost: 520,
-    x: 168,
-    y: 140,
+    cost: 28000,
     color: COLORS.miss,
-    treeX: 268,
-    treeY: 4,
+    treeX: 164,
+    treeY: 72,
     blurb: "0.75s beat — two hits in a row to score",
     icon: [
       "........",

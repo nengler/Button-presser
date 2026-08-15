@@ -2,7 +2,7 @@ import type { Button } from "./Button.ts";
 import { starAimErrorMs, starAttemptEvery } from "./upgrades.ts";
 import type { GameSave } from "./types.ts";
 
-export const STAR_HIT_SLOP_MS = 20;
+const STAR_HIT_SLOP_MS = 20;
 
 export type StarHost = {
   upgrades: GameSave["upgrades"];

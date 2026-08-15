@@ -2,27 +2,26 @@ import { defaultSave, loadSave, persistSave } from "./save.ts";
 import { scorePress } from "./timing.ts";
 import type { Burst, GameSave, GameSnapshot, PressResult, UpgradeId } from "./types.ts";
 import {
-  MAIN_BUTTON,
-  STAR_COST,
-  STAR_MAX,
   buttonById,
+  buttonCenter,
   extraButtonById,
+  MAIN_BUTTON,
+  STAR_MAX,
+  starCost,
   starsOnButton,
 } from "./buttons.ts";
 import { Button, type HitWorld } from "./Button.ts";
 import { Star } from "./Star.ts";
 import {
-  UPGRADE_DEFS,
   bonusHitPayout,
   bonusHitPeriod,
   intervalMs,
   padPayFactor,
-  recoveryFactor,
-  shieldCharges,
   starShareFactor,
+  UPGRADE_DEFS,
 } from "./upgrades.ts";
 
-export type { Burst, ButtonView, GameSnapshot } from "./types.ts";
+export type { Burst, GameSnapshot } from "./types.ts";
 
 /** Session store: save, score, and the list of buttons/stars. Buttons and stars tick themselves. */
 export class Game {
@@ -32,8 +31,6 @@ export class Game {
   private lastResult: PressResult | null = null;
   private running = false;
   private hitCount = 0;
-  private shieldsLeft = 0;
-  private clutchArmed = false;
   private listeners = new Set<() => void>();
   private lastSnap: GameSnapshot | null = null;
   private buttonsList: Button[] = [];
@@ -46,7 +43,7 @@ export class Game {
   subscribe(onStoreChange: () => void): () => void {
     this.listeners.add(onStoreChange);
     const listeners = this.listeners;
-    return function () {
+    return () => {
       listeners.delete(onStoreChange);
     };
   }
@@ -58,10 +55,8 @@ export class Game {
   start(): void {
     if (this.running) return;
     this.running = true;
-    this.mainButton.resetSession();
     this.lastResult = null;
-    this.shieldsLeft = shieldCharges(this.save.upgrades.shield);
-    this.clutchArmed = false;
+    for (const button of this.buttonsList) button.resetSession();
     this.emit();
   }
 
@@ -72,9 +67,9 @@ export class Game {
 
   tick(now = performance.now()): void {
     if (!this.running) return;
-    const world = this.hitWorld();
+    const upgrades = this.save.upgrades;
     for (const button of this.buttonsList) {
-      const expired = button.expirePending(now, world);
+      const expired = button.expirePending(now) ?? button.expireMissedBeats(now, upgrades);
       if (!expired) continue;
       this.ping(button.def.id);
       this.lastResult = expired;
@@ -124,8 +119,9 @@ export class Game {
 
   hireStar(): boolean {
     if (this.save.stars >= STAR_MAX) return false;
-    if (this.save.score < STAR_COST) return false;
-    this.save.score -= STAR_COST;
+    const cost = starCost(this.save.stars);
+    if (this.save.score < cost) return false;
+    this.save.score -= cost;
     this.save.stars += 1;
     this.parkStars();
     persistSave(this.save);
@@ -150,10 +146,15 @@ export class Game {
     this.save = defaultSave();
     this.lastResult = null;
     this.hitCount = 0;
-    this.shieldsLeft = 0;
-    this.clutchArmed = false;
     this.burst = { nonce: 0, x: 0, y: 0 };
     this.rebuildButtons();
+    persistSave(this.save);
+    this.emit();
+  }
+
+  /** Debug: dump a pile of score so the shop can be exercised. */
+  debugGrantCash(amount = 1_000_000): void {
+    this.save.score += amount;
     persistSave(this.save);
     this.emit();
   }
@@ -176,7 +177,9 @@ export class Game {
     const main = this.mainButton;
     return {
       score: this.save.score,
-      streak: main.streak,
+      buttonStreaks: this.buttonsList.map(function (button) {
+        return { id: button.def.id, streak: button.streak };
+      }),
       interval,
       phase: this.running ? ((now - main.origin) % interval) / interval : 0,
       lastResult: this.lastResult,
@@ -224,7 +227,6 @@ export class Game {
     return {
       upgrades: this.save.upgrades,
       evaluateHit: this.evaluateHit.bind(this),
-      protectStreak: this.protectStreak.bind(this),
     };
   }
 
@@ -247,10 +249,7 @@ export class Game {
       beatIndex: args.beatIndex,
     });
 
-    if (result.grade === "miss") {
-      result.streak = this.protectStreak(args.fromStar ? 0 : args.streakBefore, args.fromStar);
-      return result;
-    }
+    if (result.grade === "miss") return result;
 
     if (args.extraButton && u.padPay > 0) {
       result.points = Math.round(result.points * padPayFactor(u.padPay));
@@ -262,10 +261,6 @@ export class Game {
   private applyPayoffs(result: PressResult, fromStar: boolean): void {
     if (result.grade === "miss" || result.grade === "set" || result.points <= 0) return;
     const u = this.save.upgrades;
-    if (!fromStar && this.clutchArmed && u.recovery > 0) {
-      result.points = Math.round(result.points * recoveryFactor(u.recovery));
-      this.clutchArmed = false;
-    }
     if (!fromStar && u.bonusHits > 0) {
       this.hitCount += 1;
       const period = bonusHitPeriod(u.bonusHits);
@@ -275,20 +270,12 @@ export class Game {
     }
   }
 
-  private protectStreak(streakBefore: number, fromStar: boolean): number {
-    if (fromStar) return 0;
-    if (this.shieldsLeft > 0) {
-      this.shieldsLeft -= 1;
-      this.clutchArmed = false;
-      return streakBefore;
-    }
-    this.clutchArmed = this.save.upgrades.recovery > 0;
-    return 0;
-  }
-
   private ping(id: string): void {
-    const { x, y } = buttonById(id);
-    this.burst = { nonce: this.burst.nonce + 1, x, y };
+    const i = this.buttonsList.findIndex(function (button) {
+      return button.def.id === id;
+    });
+    const pos = buttonCenter(Math.max(0, i), this.buttonsList.length);
+    this.burst = { nonce: this.burst.nonce + 1, x: pos.x, y: pos.y };
   }
 
   private emit(): void {
