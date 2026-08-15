@@ -93,6 +93,18 @@ describe("Game", function () {
     assert.equal(game.snapshot().lastResult?.points, base + bonusHitPayout(1));
   });
 
+  it("still scores the next beat after buying tempo mid-run", function () {
+    const game = new Game();
+    game.debugGrantCash(UPGRADE_DEFS.tempo.cost(0));
+    game.press(MAIN_BUTTON.id, 8000);
+    game.press(MAIN_BUTTON.id, 9000);
+    assert.equal(game.buyUpgrade("tempo"), true);
+    assert.ok(game.snapshot().interval < 1000);
+    assert.equal(game.press(MAIN_BUTTON.id, 10000), true);
+    assert.notEqual(game.snapshot().lastResult?.grade, "miss");
+    assert.ok((game.snapshot().lastResult?.points ?? 0) > 0);
+  });
+
   it("clears progress", function () {
     const game = new Game();
     game.debugGrantCash(50);

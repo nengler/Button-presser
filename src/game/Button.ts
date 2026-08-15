@@ -44,6 +44,8 @@ export class Button {
   private lastSuccessBeat = -1;
   /** Last beat the player actually hit. Stars and idle time do not advance this. */
   private lastHitBeat = -1;
+  /** Interval origin was last aligned to. 0 means not anchored yet. */
+  private pulseMs = 0;
 
   constructor(args: { def: ButtonDef; origin: number }) {
     this.def = args.def;
@@ -52,10 +54,27 @@ export class Button {
   }
 
   interval(upgrades: GameSave["upgrades"]): number {
-    return this.isMain ? intervalMs(upgrades.tempo) : this.def.interval;
+    return this.isMain ? intervalMs(upgrades.tempo, this.streak) : this.def.interval;
+  }
+
+  /**
+   * Keep the current pulse phase when the main interval changes.
+   * Otherwise later clicks land on already-used beat indices and miss.
+   */
+  syncPulse(now: number, upgrades: GameSave["upgrades"]): void {
+    if (!this.isMain) return;
+    const next = this.interval(upgrades);
+    if (this.pulseMs <= 0) {
+      this.pulseMs = next;
+      return;
+    }
+    if (next === this.pulseMs) return;
+    this.origin = now - ((now - this.origin) * next) / this.pulseMs;
+    this.pulseMs = next;
   }
 
   nearest(now: number, upgrades: GameSave["upgrades"]): { errorMs: number; beatIndex: number } {
+    this.syncPulse(now, upgrades);
     return nearestBeatError(now, this.origin, this.interval(upgrades));
   }
 
@@ -65,6 +84,7 @@ export class Button {
   }
 
   view(now: number, running: boolean, upgrades: GameSave["upgrades"]): ButtonView {
+    this.syncPulse(now, upgrades);
     const interval = this.interval(upgrades);
     const phase = running ? ((now - this.origin) % interval) / interval : (now / interval) % 1;
     let mark: 0 | 1 | 2 = 0;
@@ -81,6 +101,7 @@ export class Button {
     this.pendingErrorMs = 0;
     this.lastSuccessBeat = -1;
     this.lastHitBeat = -1;
+    this.pulseMs = 0;
   }
 
   /** Timed-out double-tap. Caller treats this as a player miss. */
@@ -92,6 +113,7 @@ export class Button {
     this.pendingBeat = -1;
     this.used.add(beatIndex);
     this.noteMiss(false);
+    this.syncPulse(now, upgrades);
     return {
       errorMs: doubleGapMs(upgrades.twinGap),
       points: 0,
@@ -120,6 +142,7 @@ export class Button {
     if (now <= deadline) return null;
     this.streak = 0;
     this.lastSuccessBeat = -1;
+    this.syncPulse(now, upgrades);
     return {
       errorMs: window,
       points: 0,
@@ -146,12 +169,15 @@ export class Button {
     const { errorMs, beatIndex } = this.nearest(now, world.upgrades);
 
     if (this.def.kind === "double" && !this.isMain) {
-      return this.pressDouble({ now, fromStar, world, errorMs, beatIndex });
+      const attempt = this.pressDouble({ now, fromStar, world, errorMs, beatIndex });
+      this.syncPulse(now, world.upgrades);
+      return attempt;
     }
 
     if (this.used.has(beatIndex)) {
       if (!this.isMain) return { ok: false };
       this.noteMiss(fromStar);
+      this.syncPulse(now, world.upgrades);
       return {
         ok: true,
         ping: true,
@@ -178,6 +204,7 @@ export class Button {
       extraButton: !this.isMain,
     });
     this.takeHit(result, fromStar);
+    this.syncPulse(now, world.upgrades);
 
     return {
       ok: true,

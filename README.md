@@ -41,7 +41,7 @@ npm run electron   # desktop window (production build)
 3. Grades: perfect → great → good → ok → miss. A miss or a skipped beat breaks that button's streak. Other buttons keep theirs.
 4. Open **TREE** to buy upgrades. Paths gate later nodes. Progress saves in `localStorage`.
 
-EVERY is the root. Scoring goes EVERY → MULT → FOCUS → PERF → SNAP → GREAT. Side branches: EVERY also opens the 1.5s extra button; MULT opens COMBO → TWIN (double-tap) which forks to GAP (wider double-tap), CHAIN (longer streaks), and BTNS → STAR; FOCUS opens TEMPO → PAIR (0.75s, two hits in a row). STAR opens PULSE and AIM; PULSE opens SHARE; AIM opens TIP (star payout) and CREW (more hire slots). Stars start slow and late — PULSE, AIM, SHARE, and TIP make them fire more often, closer to the beat, with a cut of your scoring upgrades, and with their own multiplier. BTNS makes extra buttons pay more.
+EVERY is the root. Scoring goes EVERY → MULT → FOCUS → PERF → SNAP → GREAT. Side branches: EVERY also opens the 1.5s extra button; MULT opens COMBO → TWIN (double-tap) which forks to GAP (wider double-tap), CHAIN (longer streaks), and BTNS → STAR; FOCUS opens TEMPO (streaks speed the main beat) → PAIR (0.75s, two hits in a row). STAR opens PULSE and AIM; PULSE opens SHARE; AIM opens TIP (star payout) and CREW (more hire slots). Stars start slow and late — PULSE, AIM, SHARE, and TIP make them fire more often, closer to the beat, with a cut of your scoring upgrades, and with their own multiplier. BTNS makes extra buttons pay more.
 
 ## Layout
 

@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { Button, type HitWorld } from "./Button.ts";
 import { EXTRA_BUTTONS, MAIN_BUTTON } from "./buttons.ts";
 import { scorePress } from "./timing.ts";
-import { emptyUpgrades, windowMs } from "./upgrades.ts";
+import { emptyUpgrades, intervalMs, windowMs } from "./upgrades.ts";
 
 function world(upgrades = emptyUpgrades()): HitWorld {
   return {
@@ -44,6 +44,21 @@ describe("Button press", function () {
     const w = world();
     assert.equal(extra.press({ now: 0, fromStar: false, world: w }).ok, true);
     assert.equal(extra.press({ now: 10, fromStar: false, world: w }).ok, false);
+  });
+
+  it("speeds the main beat as the streak grows", function () {
+    const main = new Button({ def: MAIN_BUTTON, origin: 0 });
+    const upgrades = emptyUpgrades();
+    upgrades.tempo = 1;
+    const w = world(upgrades);
+    main.press({ now: 0, fromStar: false, world: w });
+    assert.equal(main.interval(upgrades), intervalMs(1, 1));
+    const second = main.press({ now: intervalMs(1, 1), fromStar: false, world: w });
+    assert.equal(second.ok, true);
+    if (!second.ok) return;
+    assert.notEqual(second.result.grade, "miss");
+    assert.equal(main.streak, 2);
+    assert.equal(main.interval(upgrades), intervalMs(1, 2));
   });
 
   it("counts a reused main beat as a miss", function () {
