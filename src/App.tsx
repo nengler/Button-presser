@@ -55,13 +55,7 @@ export function App() {
 
   const shopOpen = shop === "on" || shop === "leave";
   const stageClass =
-    shop === "out"
-      ? " shop-out"
-      : shopOpen
-        ? " shop-on"
-        : shop === "in"
-          ? " shop-in"
-          : "";
+    shop === "out" ? " shop-out" : shopOpen ? " shop-on" : shop === "in" ? " shop-in" : "";
 
   return (
     <div className="page">
