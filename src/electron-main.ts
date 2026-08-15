@@ -11,7 +11,7 @@ function createWindow(): void {
     height: 540,
     minWidth: 320,
     minHeight: 180,
-    backgroundColor: "#0a100e",
+    backgroundColor: "#14201c",
     title: "Button Presser",
     useContentSize: true,
     webPreferences: {

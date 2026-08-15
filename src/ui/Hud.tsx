@@ -42,7 +42,7 @@ export function Hud({
       : "ready";
 
   return (
-    <div className="hud">
+    <>
       <div className="brand">
         <div className="title">BUTTON PRESSER</div>
         <div className="tag">hit the beat</div>
@@ -84,6 +84,6 @@ export function Hud({
         </button>
         <div className="hint">SPACE / click ring</div>
       </div>
-    </div>
+    </>
   );
 }

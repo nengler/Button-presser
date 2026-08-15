@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Game } from "../game/Game.ts";
-import { minionsOnStation, padById } from "../game/pads.ts";
+import { MAIN_PAD, minionsOnStation, padById } from "../game/pads.ts";
 import { COLORS, HEIGHT, WIDTH } from "../game/view.ts";
 import { fadeOnInk, fillDisc, fillRing, fillSweepRing } from "./pixelDraw.ts";
 
@@ -30,11 +30,12 @@ type Speck = {
   max: number;
 };
 
-function canvasPos(canvas: HTMLCanvasElement, e: PointerEvent) {
-  const rect = canvas.getBoundingClientRect();
+function clientPos(el: HTMLElement, clientX: number, clientY: number) {
+  const rect = el.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return { x: -1, y: -1 };
   return {
-    x: ((e.clientX - rect.left) / rect.width) * WIDTH,
-    y: ((e.clientY - rect.top) / rect.height) * HEIGHT,
+    x: ((clientX - rect.left) / rect.width) * WIDTH,
+    y: ((clientY - rect.top) / rect.height) * HEIGHT,
   };
 }
 
@@ -89,6 +90,7 @@ function spawnSparks(specks: Speck[], x: number, y: number) {
 
 export function Playfield({ game }: { game: Game }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hitLayerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef(game);
   gameRef.current = game;
 
@@ -167,29 +169,46 @@ export function Playfield({ game }: { game: Game }) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const padAt = (e: PointerEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-    const { x, y } = canvasPos(canvas, e);
+  const padAt = (clientX: number, clientY: number) => {
+    const hit = hitLayerRef.current;
+    if (!hit) return null;
+    const { x, y } = clientPos(hit, clientX, clientY);
     return hitPad(gameRef.current.pads(), x, y);
   };
 
+  const pressAt = (clientX: number, clientY: number) => {
+    const id = padAt(clientX, clientY);
+    if (!id) return;
+    const g = gameRef.current;
+    if (!g.snapshot().running && id === MAIN_PAD.id) {
+      g.start();
+      return;
+    }
+    g.press(id);
+  };
+
   return (
-    <canvas
-      ref={canvasRef}
-      width={WIDTH}
-      height={HEIGHT}
-      onPointerDown={(e) => {
-        const id = padAt(e.nativeEvent);
-        if (id) gameRef.current.press(id);
-      }}
-      onPointerMove={(e) => {
-        const canvas = canvasRef.current;
-        if (canvas) canvas.style.cursor = padAt(e.nativeEvent) ? "pointer" : "default";
-      }}
-      onPointerLeave={() => {
-        if (canvasRef.current) canvasRef.current.style.cursor = "default";
-      }}
-    />
+    <>
+      <div className="playfield">
+        <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} />
+      </div>
+      {/* Sibling overlay above HUD text so iOS can hit the ring; canvas pointer events are flaky. */}
+      <div
+        ref={hitLayerRef}
+        className="pad-hit"
+        onPointerDown={(e) => {
+          if (e.button !== 0 && e.pointerType === "mouse") return;
+          e.preventDefault();
+          pressAt(e.clientX, e.clientY);
+        }}
+        onPointerMove={(e) => {
+          const hit = hitLayerRef.current;
+          if (hit) hit.style.cursor = padAt(e.clientX, e.clientY) ? "pointer" : "default";
+        }}
+        onPointerLeave={() => {
+          if (hitLayerRef.current) hitLayerRef.current.style.cursor = "default";
+        }}
+      />
+    </>
   );
 }

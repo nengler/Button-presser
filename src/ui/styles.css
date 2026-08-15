@@ -8,7 +8,6 @@
   --gold: #d4a24c;
   --gold-hot: #f0c56d;
   --dim: #5a7364;
-  --letterbox: #0a100e;
 }
 
 *,
@@ -22,7 +21,7 @@ body,
 #root {
   margin: 0;
   height: 100%;
-  background: var(--letterbox);
+  background: var(--ink);
   color: var(--foam);
   font-family: ui-monospace, "Courier New", monospace;
   overflow: hidden;
@@ -34,15 +33,18 @@ body,
   display: grid;
   place-items: center;
   padding: 0;
+  background: var(--ink);
 }
 
 .frame {
-  display: grid;
-  place-items: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .stage {
-  position: relative;
+  position: absolute;
+  left: 0;
+  top: 0;
   width: 320px;
   height: 180px;
   background: var(--ink);
@@ -70,16 +72,37 @@ body,
   height: 100% !important;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
-}
-
-.hud {
-  position: absolute;
-  inset: 0;
   pointer-events: none;
 }
 
-.hud button {
+.pad-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  touch-action: none;
+  cursor: default;
+}
+
+.brand,
+.stats,
+.feedback,
+.hint,
+.controls {
+  pointer-events: none;
+}
+
+.tree-open,
+.controls {
+  z-index: 2;
+}
+
+.tree-open,
+.controls button {
   pointer-events: auto;
+}
+
+.tree-open,
+.btn {
   appearance: none;
   border-radius: 0;
   font-family: inherit;
