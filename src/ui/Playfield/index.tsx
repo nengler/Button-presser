@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback } from "react";
 import type { Game } from "../../game/Game.ts";
 import { buttonById, buttonCenter, starsOnButton } from "../../game/buttons.ts";
 import { COLORS, HEIGHT, WIDTH } from "../../game/view.ts";
@@ -61,7 +61,7 @@ function drawBeat(
   }
 }
 
-function bindPlayfield(gameRef: { current: Game }, canvas: HTMLCanvasElement | null) {
+function bindPlayfield(game: Game, canvas: HTMLCanvasElement | null) {
   if (!canvas) return;
   const surface = canvas;
   const ctx = surface.getContext("2d", { alpha: true });
@@ -80,17 +80,16 @@ function bindPlayfield(gameRef: { current: Game }, canvas: HTMLCanvasElement | n
     last = now;
     elapsed += dt;
 
-    const g = gameRef.current;
-    g.tick(now);
-    if (g.burst.nonce !== 0 && g.burst.nonce !== lastNonce) {
-      lastNonce = g.burst.nonce;
-      spawnSparks(specks, g.burst.x, g.burst.y);
+    game.tick(now);
+    if (game.burst.nonce !== 0 && game.burst.nonce !== lastNonce) {
+      lastNonce = game.burst.nonce;
+      spawnSparks(specks, game.burst.x, game.burst.y);
     }
     stepSparks(specks, dt);
 
     draw.clearRect(0, 0, WIDTH, HEIGHT);
 
-    const buttons = g.buttons(now);
+    const buttons = game.buttons(now);
     const n = Math.max(buttons.length, 1);
     for (let i = 0; i < buttons.length; i++) {
       const button = buttons[i]!;
@@ -99,8 +98,8 @@ function bindPlayfield(gameRef: { current: Game }, canvas: HTMLCanvasElement | n
       drawBeat(draw, pos.x, pos.y, button.phase, def.color, button.mark);
     }
 
-    const stars = g.stars;
     draw.fillStyle = COLORS.foam;
+    const stars = game.stars;
     for (let i = 0; i < buttons.length; i++) {
       const count = starsOnButton(stars, i, n);
       if (count === 0) continue;
@@ -135,11 +134,10 @@ function bindPlayfield(gameRef: { current: Game }, canvas: HTMLCanvasElement | n
     if (!pos) return;
     e.preventDefault();
     armSfx();
-    const g = gameRef.current;
-    const id = hitButton(g.buttons(), pos.x, pos.y);
+    const id = hitButton(game.buttons(), pos.x, pos.y);
     if (!id) return;
-    if (!g.press(id)) return;
-    const snap = g.snapshot();
+    if (!game.press(id)) return;
+    const snap = game.snapshot();
     if (snap.lastResult) playPress(snap.lastResult, snap.upgrades.focus);
   }
 
@@ -153,11 +151,12 @@ function bindPlayfield(gameRef: { current: Game }, canvas: HTMLCanvasElement | n
 }
 
 export function Playfield({ game }: { game: Game }) {
-  const gameRef = useRef(game);
-  gameRef.current = game;
-  const bind = useRef(function (canvas: HTMLCanvasElement | null) {
-    return bindPlayfield(gameRef, canvas);
-  }).current;
+  const bind = useCallback(
+    function (canvas: HTMLCanvasElement | null) {
+      return bindPlayfield(game, canvas);
+    },
+    [game],
+  );
 
   return (
     <div className="playfield">

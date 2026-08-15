@@ -67,6 +67,22 @@ describe("scorePress", function () {
     assert.notEqual(boosted.grade, "perfect");
     assert.equal(boosted.points, plain.points);
   });
+
+  it("promotes a near-great into a perfect once snap is owned", function () {
+    const errorMs = windowMs(0) * 0.2;
+    const plain = scorePress({ ...base, errorMs });
+    const snapped = scorePress({ ...base, errorMs, snapLevel: 6 });
+    assert.equal(plain.grade, "great");
+    assert.equal(snapped.grade, "perfect");
+  });
+
+  it("boosts greats when great pay is owned", function () {
+    const errorMs = windowMs(0) * 0.2;
+    const boosted = scorePress({ ...base, errorMs, greatLevel: 4 });
+    const plain = scorePress({ ...base, errorMs, greatLevel: 0 });
+    assert.equal(plain.grade, "great");
+    assert.ok(boosted.points > plain.points);
+  });
 });
 
 describe("double and pair helpers", function () {

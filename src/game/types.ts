@@ -10,7 +10,13 @@ export type UpgradeId =
   | "starRate"
   | "starAim"
   | "starSkill"
-  | "padPay";
+  | "padPay"
+  | "snap"
+  | "greatPay"
+  | "comboDepth"
+  | "twinGap"
+  | "starPay"
+  | "crew";
 
 export type ButtonKind = "beat" | "double" | "pair";
 

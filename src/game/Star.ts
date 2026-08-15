@@ -16,7 +16,7 @@ export class Star {
   tick(now: number, host: StarHost): void {
     if (this.button.stars[0] !== this) return;
 
-    if (this.button.pendingReadyForStar(now)) {
+    if (this.button.pendingReadyForStar(now, host.upgrades)) {
       host.press(this.button.def.id, now, { fromStar: true });
       return;
     }

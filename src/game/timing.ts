@@ -1,12 +1,12 @@
 import type { PressResult } from "./types.ts";
-import { comboFactor, perfectPayFactor, scoreMultiplier, windowMs } from "./upgrades.ts";
-
-const GRADE_THRESHOLDS = {
-  perfect: 0.12,
-  great: 0.28,
-  good: 0.55,
-  ok: 1,
-} as const;
+import {
+  comboFactor,
+  gradeBands,
+  greatPayFactor,
+  perfectPayFactor,
+  scoreMultiplier,
+  windowMs,
+} from "./upgrades.ts";
 
 /**
  * Score a press against the nearest beat. Closer absolute error → more points.
@@ -17,6 +17,9 @@ export function scorePress(opts: {
   multiplierLevel: number;
   comboLevel: number;
   perfectLevel?: number;
+  snapLevel?: number;
+  greatLevel?: number;
+  comboDepthLevel?: number;
   streakBefore: number;
   beatIndex: number;
 }): PressResult {
@@ -38,18 +41,21 @@ export function scorePress(opts: {
   const curve = Math.pow(closeness, 1.35);
   const base = 8 + curve * 70;
   const streak = opts.streakBefore + 1;
+  const bands = gradeBands(opts.snapLevel ?? 0);
 
   let grade: PressResult["grade"] = "ok";
-  if (ratio <= GRADE_THRESHOLDS.perfect) grade = "perfect";
-  else if (ratio <= GRADE_THRESHOLDS.great) grade = "great";
-  else if (ratio <= GRADE_THRESHOLDS.good) grade = "good";
+  if (ratio <= bands.perfect) grade = "perfect";
+  else if (ratio <= bands.great) grade = "great";
+  else if (ratio <= bands.good) grade = "good";
 
   const perfectBoost = grade === "perfect" ? perfectPayFactor(opts.perfectLevel ?? 0) : 1;
+  const greatBoost = grade === "great" ? greatPayFactor(opts.greatLevel ?? 0) : 1;
   const points = Math.round(
     base *
       scoreMultiplier(opts.multiplierLevel) *
-      comboFactor(streak, opts.comboLevel) *
-      perfectBoost,
+      comboFactor(streak, opts.comboLevel, opts.comboDepthLevel ?? 0) *
+      perfectBoost *
+      greatBoost,
   );
 
   return {

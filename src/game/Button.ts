@@ -1,7 +1,7 @@
-import { type ButtonDef, DOUBLE_GAP_MS, MAIN_BUTTON } from "./buttons.ts";
+import { type ButtonDef, MAIN_BUTTON } from "./buttons.ts";
 import { nearestBeatError, pairCompletes, withinDoubleGap } from "./timing.ts";
 import type { ButtonView, GameSave, PressResult } from "./types.ts";
-import { intervalMs, starShareFactor, windowMs } from "./upgrades.ts";
+import { doubleGapMs, intervalMs, starShareFactor, windowMs } from "./upgrades.ts";
 import type { Star } from "./Star.ts";
 
 export type HitWorld = {
@@ -84,16 +84,16 @@ export class Button {
   }
 
   /** Timed-out double-tap. Caller treats this as a player miss. */
-  expirePending(now: number): PressResult | null {
+  expirePending(now: number, upgrades: GameSave["upgrades"]): PressResult | null {
     if (this.pendingTapAt === null) return null;
-    if (now - this.pendingTapAt <= DOUBLE_GAP_MS) return null;
+    if (now - this.pendingTapAt <= doubleGapMs(upgrades.twinGap)) return null;
     const beatIndex = this.pendingBeat;
     this.pendingTapAt = null;
     this.pendingBeat = -1;
     this.used.add(beatIndex);
     this.noteMiss(false);
     return {
-      errorMs: DOUBLE_GAP_MS,
+      errorMs: doubleGapMs(upgrades.twinGap),
       points: 0,
       grade: "miss",
       streak: this.streak,
@@ -101,10 +101,10 @@ export class Button {
     };
   }
 
-  pendingReadyForStar(now: number): boolean {
+  pendingReadyForStar(now: number, upgrades: GameSave["upgrades"]): boolean {
     if (this.def.kind !== "double" || this.pendingTapAt === null) return false;
     const dt = now - this.pendingTapAt;
-    return dt >= 70 && dt <= DOUBLE_GAP_MS;
+    return dt >= 70 && dt <= doubleGapMs(upgrades.twinGap);
   }
 
   /**
@@ -200,7 +200,7 @@ export class Button {
     if (this.pendingTapAt !== null) {
       const heldBeat = this.pendingBeat;
       const heldError = this.pendingErrorMs;
-      if (withinDoubleGap(this.pendingTapAt, now, DOUBLE_GAP_MS)) {
+      if (withinDoubleGap(this.pendingTapAt, now, doubleGapMs(world.upgrades.twinGap))) {
         this.pendingTapAt = null;
         this.pendingBeat = -1;
         this.used.add(heldBeat);
