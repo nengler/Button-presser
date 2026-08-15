@@ -3,6 +3,7 @@ import type { GameSnapshot } from "../game/Game.ts";
 import { COLORS } from "../game/view.ts";
 
 const FLY_MS = 480;
+const GRADE_MS = 560;
 const SCORE_X = 10;
 const SCORE_Y = 6;
 
@@ -29,6 +30,14 @@ type Chip = {
   color: string;
   x0: number;
   y0: number;
+};
+
+type Puff = {
+  id: number;
+  label: string;
+  color: string;
+  x: number;
+  y: number;
 };
 
 function FlyChip({
@@ -73,6 +82,55 @@ function FlyChip({
   );
 }
 
+function GradePuff({ puff, onDone }: { puff: Puff; onDone: (id: number) => void }) {
+  const [u, setU] = useState(0);
+
+  useEffect(() => {
+    const t0 = performance.now();
+    let raf = 0;
+    let done = false;
+    const tick = (now: number) => {
+      const next = Math.min(1, (now - t0) / GRADE_MS);
+      setU(next);
+      if (next < 1) raf = requestAnimationFrame(tick);
+      else if (!done) {
+        done = true;
+        onDone(puff.id);
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [onDone, puff.id]);
+
+  const rise = Math.round(u * 8);
+  return (
+    <div
+      className="grade-puff"
+      style={{
+        left: puff.x,
+        top: puff.y - rise,
+        color: puff.color,
+        opacity: 1 - u,
+      }}
+    >
+      {puff.label}
+    </div>
+  );
+}
+
+function useNudge(value: number): boolean {
+  const [on, setOn] = useState(false);
+  const prev = useRef(value);
+  useEffect(() => {
+    if (prev.current === value) return;
+    prev.current = value;
+    setOn(true);
+    const t = window.setTimeout(() => setOn(false), 220);
+    return () => window.clearTimeout(t);
+  }, [value]);
+  return on;
+}
+
 export function Hud({
   snap,
   onTree,
@@ -83,12 +141,34 @@ export function Hud({
   const [shown, setShown] = useState(() => Math.floor(snap.score));
   const [pop, setPop] = useState(false);
   const [chips, setChips] = useState<Chip[]>([]);
+  const [puffs, setPuffs] = useState<Puff[]>([]);
   const shownRef = useRef(shown);
   const pendingRef = useRef(0);
   const hitNonceRef = useRef(snap.hitNonce);
+  const gradeNonceRef = useRef(snap.hitNonce);
   const chipAlive = useRef(new Set<number>());
   const nextId = useRef(1);
   shownRef.current = shown;
+
+  const strNudge = useNudge(snap.streak);
+  const bestNudge = useNudge(snap.bestStreak);
+
+  useEffect(() => {
+    if (snap.hitNonce === gradeNonceRef.current) return;
+    gradeNonceRef.current = snap.hitNonce;
+    const result = snap.lastResult;
+    if (!result) return;
+    setPuffs((list) => [
+      ...list,
+      {
+        id: nextId.current++,
+        label: result.grade.toUpperCase(),
+        color: gradeColor(result.grade),
+        x: snap.hitX - 18,
+        y: snap.hitY - 16,
+      },
+    ]);
+  }, [snap.hitNonce, snap.hitX, snap.hitY, snap.lastResult]);
 
   useEffect(() => {
     const total = Math.floor(snap.score);
@@ -140,6 +220,10 @@ export function Hud({
     window.setTimeout(() => setPop(false), 140);
   }, []);
 
+  const onPuffDone = useCallback((id: number) => {
+    setPuffs((list) => list.filter((p) => p.id !== id));
+  }, []);
+
   return (
     <>
       <button type="button" className="tree-open" onClick={onTree}>
@@ -147,11 +231,14 @@ export function Hud({
       </button>
 
       <div className="stats">
-        <span className={`gold${pop ? " pop" : ""}`}>SCR {shown}</span>
-        <span>STR {snap.streak}</span>
-        <span className="sage">BEST {snap.bestStreak}</span>
+        <span className={`stat gold${pop ? " pop" : ""}`}>SCR {shown}</span>
+        <span className={`stat${strNudge ? " nudge" : ""}`}>STR {snap.streak}</span>
+        <span className={`stat sage${bestNudge ? " nudge" : ""}`}>BEST {snap.bestStreak}</span>
       </div>
 
+      {puffs.map((puff) => (
+        <GradePuff key={puff.id} puff={puff} onDone={onPuffDone} />
+      ))}
       {chips.map((chip) => (
         <FlyChip key={chip.id} chip={chip} onLand={onLand} />
       ))}
