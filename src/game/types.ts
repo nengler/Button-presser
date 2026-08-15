@@ -41,9 +41,17 @@ export interface GameSave {
 
 type Grade = "perfect" | "great" | "good" | "ok" | "miss" | "set";
 
+export type ScoreBonus = {
+  label: string;
+  points: number;
+};
+
 export interface PressResult {
   errorMs: number;
   points: number;
+  /** Timing score before upgrade bonuses. */
+  basePoints: number;
+  bonuses: ScoreBonus[];
   grade: Grade;
   streak: number;
   beatIndex: number;

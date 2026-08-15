@@ -1,4 +1,4 @@
-import type { PressResult } from "./types.ts";
+import type { PressResult, ScoreBonus } from "./types.ts";
 import {
   comboFactor,
   gradeBands,
@@ -7,6 +7,53 @@ import {
   scoreMultiplier,
   windowMs,
 } from "./upgrades.ts";
+
+export function zeroPress(args: {
+  errorMs: number;
+  grade: PressResult["grade"];
+  streak: number;
+  beatIndex: number;
+}): PressResult {
+  return {
+    errorMs: args.errorMs,
+    points: 0,
+    basePoints: 0,
+    bonuses: [],
+    grade: args.grade,
+    streak: args.streak,
+    beatIndex: args.beatIndex,
+  };
+}
+
+export function multiplyScore(result: PressResult, factor: number, label: string): void {
+  if (factor === 1 || result.points <= 0) return;
+  const next = Math.round(result.points * factor);
+  const extra = next - result.points;
+  if (extra === 0) return;
+  result.bonuses.push({ label, points: extra });
+  result.points = next;
+}
+
+export function addScore(result: PressResult, extra: number, label: string): void {
+  if (extra === 0) return;
+  result.bonuses.push({ label, points: extra });
+  result.points += extra;
+}
+
+function pushFactor(args: {
+  product: number;
+  shown: number;
+  factor: number;
+  label: string;
+  bonuses: ScoreBonus[];
+}): { product: number; shown: number } {
+  if (args.factor === 1) return { product: args.product, shown: args.shown };
+  const product = args.product * args.factor;
+  const shown = Math.round(product);
+  const extra = shown - args.shown;
+  if (extra !== 0) args.bonuses.push({ label: args.label, points: extra });
+  return { product, shown };
+}
 
 /**
  * Score a press against the nearest beat. Closer absolute error → more points.
@@ -28,13 +75,12 @@ export function scorePress(opts: {
   const ratio = abs / window;
 
   if (ratio >= 1) {
-    return {
+    return zeroPress({
       errorMs: opts.errorMs,
-      points: 0,
       grade: "miss",
       streak: 0,
       beatIndex: opts.beatIndex,
-    };
+    });
   }
 
   const closeness = 1 - ratio;
@@ -48,19 +94,43 @@ export function scorePress(opts: {
   else if (ratio <= bands.great) grade = "great";
   else if (ratio <= bands.good) grade = "good";
 
-  const perfectBoost = grade === "perfect" ? perfectPayFactor(opts.perfectLevel ?? 0) : 1;
-  const greatBoost = grade === "great" ? greatPayFactor(opts.greatLevel ?? 0) : 1;
-  const points = Math.round(
-    base *
-      scoreMultiplier(opts.multiplierLevel) *
-      comboFactor(streak, opts.comboLevel, opts.comboDepthLevel ?? 0) *
-      perfectBoost *
-      greatBoost,
-  );
+  const bonuses: ScoreBonus[] = [];
+  let product = base;
+  let shown = Math.round(base);
+  const afterMult = pushFactor({
+    product,
+    shown,
+    factor: scoreMultiplier(opts.multiplierLevel),
+    label: "MULT",
+    bonuses,
+  });
+  const afterCombo = pushFactor({
+    product: afterMult.product,
+    shown: afterMult.shown,
+    factor: comboFactor(streak, opts.comboLevel, opts.comboDepthLevel ?? 0),
+    label: "COMBO",
+    bonuses,
+  });
+  const afterPerfect = pushFactor({
+    product: afterCombo.product,
+    shown: afterCombo.shown,
+    factor: grade === "perfect" ? perfectPayFactor(opts.perfectLevel ?? 0) : 1,
+    label: "PERF",
+    bonuses,
+  });
+  const afterGreat = pushFactor({
+    product: afterPerfect.product,
+    shown: afterPerfect.shown,
+    factor: grade === "great" ? greatPayFactor(opts.greatLevel ?? 0) : 1,
+    label: "GREAT",
+    bonuses,
+  });
 
   return {
     errorMs: opts.errorMs,
-    points,
+    points: afterGreat.shown,
+    basePoints: Math.round(base),
+    bonuses,
     grade,
     streak,
     beatIndex: opts.beatIndex,
