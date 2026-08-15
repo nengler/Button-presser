@@ -33,7 +33,6 @@ body,
   display: grid;
   place-items: center;
   padding: 0;
-  background: var(--ink);
 }
 
 .frame {
@@ -71,9 +70,6 @@ body,
   width: 100% !important;
   height: 100% !important;
   touch-action: none;
-  pointer-events: auto;
-  user-select: none;
-  -webkit-user-select: none;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
 }
@@ -84,11 +80,6 @@ body,
 .hint,
 .controls {
   pointer-events: none;
-}
-
-.tree-open,
-.controls {
-  z-index: 2;
 }
 
 .tree-open,

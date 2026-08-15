@@ -3,6 +3,7 @@ import type { Game } from "../game/Game.ts";
 import { MAIN_PAD, minionsOnStation, padById } from "../game/pads.ts";
 import { COLORS, HEIGHT, WIDTH } from "../game/view.ts";
 import { fadeOnInk, fillDisc, fillRing, fillSweepRing } from "./pixelDraw.ts";
+import { hitPad, pointerToCanvas } from "./pointer.ts";
 
 const MOSS_IN = 32;
 const MOSS_OUT = 34;
@@ -12,7 +13,6 @@ const PULSE_R0 = 25;
 const PULSE_R1 = 34;
 const PIP_R0 = 3;
 const PIP_R1 = 7;
-const HIT_R = 43;
 const MINION_ORBIT = 50;
 const MINION_R = 4;
 const MINION_SPIN = 0.85;
@@ -29,28 +29,6 @@ type Speck = {
   life: number;
   max: number;
 };
-
-/** Map a pointer's client (CSS) position onto the canvas bitmap, including CSS/transform scale. */
-function pointerToCanvas(canvas: HTMLCanvasElement, clientX: number, clientY: number) {
-  const rect = canvas.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) return { x: -1, y: -1 };
-  return {
-    x: ((clientX - rect.left) / rect.width) * canvas.width,
-    y: ((clientY - rect.top) / rect.height) * canvas.height,
-  };
-}
-
-function hitPad(pads: { id: string }[], sx: number, sy: number): string | null {
-  let best: { id: string; d2: number } | null = null;
-  const r2 = HIT_R * HIT_R;
-  for (const pad of pads) {
-    const def = padById(pad.id);
-    const d2 = (sx - def.x) ** 2 + (sy - def.y) ** 2;
-    if (d2 > r2) continue;
-    if (!best || d2 < best.d2) best = { id: pad.id, d2 };
-  }
-  return best?.id ?? null;
-}
 
 function drawBeat(
   ctx: CanvasRenderingContext2D,
@@ -167,30 +145,18 @@ export function Playfield({ game }: { game: Game }) {
 
     raf = requestAnimationFrame(tick);
 
+    const stage: HTMLElement = canvas.closest(".stage") ?? canvas;
     const uiControl = (t: EventTarget | null) =>
       t instanceof Element && !!t.closest("button, .tree");
-
-    const onCanvas = (e: PointerEvent) => {
-      const r = canvas.getBoundingClientRect();
-      return (
-        e.clientX >= r.left &&
-        e.clientX <= r.right &&
-        e.clientY >= r.top &&
-        e.clientY <= r.bottom
-      );
-    };
-
-    const padAt = (e: PointerEvent) => {
-      const { x, y } = pointerToCanvas(canvas, e.clientX, e.clientY);
-      return hitPad(gameRef.current.pads(), x, y);
-    };
 
     const onPointerDown = (e: PointerEvent) => {
       if (!e.isPrimary) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
-      if (uiControl(e.target) || !onCanvas(e)) return;
+      if (uiControl(e.target)) return;
+      const pos = pointerToCanvas(canvas, e.clientX, e.clientY);
+      if (!pos) return;
       e.preventDefault();
-      const id = padAt(e);
+      const id = hitPad(gameRef.current.pads(), pos.x, pos.y);
       if (!id) return;
       const g = gameRef.current;
       if (!g.snapshot().running && id === MAIN_PAD.id) g.start();
@@ -199,35 +165,25 @@ export function Playfield({ game }: { game: Game }) {
 
     const onPointerMove = (e: PointerEvent) => {
       if (!e.isPrimary || e.pointerType !== "mouse") return;
-      canvas.style.cursor = onCanvas(e) && padAt(e) ? "pointer" : "default";
-    };
-
-    const onPointerUp = () => {
-      canvas.style.cursor = "default";
-    };
-
-    const onPointerCancel = () => {
-      canvas.style.cursor = "default";
+      const pos = pointerToCanvas(canvas, e.clientX, e.clientY);
+      canvas.style.cursor =
+        pos && hitPad(gameRef.current.pads(), pos.x, pos.y) ? "pointer" : "default";
     };
 
     const opts: AddEventListenerOptions = { capture: true, passive: false };
-    window.addEventListener("pointerdown", onPointerDown, opts);
-    window.addEventListener("pointermove", onPointerMove, opts);
-    window.addEventListener("pointerup", onPointerUp, opts);
-    window.addEventListener("pointercancel", onPointerCancel, opts);
+    stage.addEventListener("pointerdown", onPointerDown, opts);
+    stage.addEventListener("pointermove", onPointerMove, opts);
 
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("pointerdown", onPointerDown, opts);
-      window.removeEventListener("pointermove", onPointerMove, opts);
-      window.removeEventListener("pointerup", onPointerUp, opts);
-      window.removeEventListener("pointercancel", onPointerCancel, opts);
+      stage.removeEventListener("pointerdown", onPointerDown, opts);
+      stage.removeEventListener("pointermove", onPointerMove, opts);
     };
   }, []);
 
   return (
     <div className="playfield">
-      <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} style={{ touchAction: "none" }} />
+      <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} />
     </div>
   );
 }
