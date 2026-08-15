@@ -220,12 +220,13 @@ body,
   height: 12px;
   padding: 0;
   background: var(--ink2);
-  color: var(--foam);
-  border: 1px solid var(--sage);
+  color: var(--gold-hot);
+  border: 1px solid var(--gold);
 }
 
 .tree-open:hover {
-  background: var(--moss);
+  background: var(--gold);
+  color: var(--ink);
 }
 
 .tree {
@@ -234,6 +235,15 @@ body,
   z-index: 5;
   background: var(--ink);
   pointer-events: auto;
+}
+
+.tree::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, #203c56 0%, #0d2b45 38%, #0d2b45 100%);
+  pointer-events: none;
 }
 
 .tree-head {
@@ -246,6 +256,12 @@ body,
   align-items: center;
   gap: 8px;
   color: var(--foam);
+  z-index: 1;
+}
+
+.tree-brand {
+  color: var(--gold-hot);
+  animation: stat-idle 2.4s steps(2, end) infinite;
 }
 
 .tree-head .gold {
@@ -257,6 +273,13 @@ body,
   width: 36px;
   height: 14px;
   font-size: 7px;
+  border-color: var(--gold);
+  color: var(--gold-hot);
+}
+
+.tree-back:hover {
+  background: var(--gold);
+  color: var(--ink);
 }
 
 .tree-map {
@@ -265,11 +288,80 @@ body,
   right: 0;
   top: 18px;
   bottom: 32px;
+  z-index: 1;
+}
+
+.tree-star {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  animation: star-twinkle 1.8s steps(2, end) infinite;
+}
+
+.tree-star.d1 {
+  animation-delay: 0.4s;
+}
+
+.tree-star.d2 {
+  animation-delay: 0.9s;
+}
+
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
 }
 
 .tree-wire {
   position: absolute;
   pointer-events: none;
+  overflow: hidden;
+}
+
+.tree-wire-core {
+  position: absolute;
+  pointer-events: none;
+}
+
+.tree-spark {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: var(--foam);
+  pointer-events: none;
+}
+
+.tree-wire.h.lit .tree-spark {
+  top: 0;
+  animation: spark-h 1.5s steps(10, end) infinite;
+}
+
+.tree-wire.v.lit .tree-spark {
+  left: 0;
+  animation: spark-v 1.5s steps(10, end) infinite;
+}
+
+@keyframes spark-h {
+  0% {
+    left: 0;
+  }
+  100% {
+    left: calc(100% - 3px);
+  }
+}
+
+@keyframes spark-v {
+  0% {
+    top: 0;
+  }
+  100% {
+    top: calc(100% - 3px);
+  }
 }
 
 .tree-node {
@@ -279,6 +371,50 @@ body,
   padding: 0;
   border: 2px solid var(--moss);
   background: var(--ink);
+  image-rendering: pixelated;
+}
+
+.tree-node.open {
+  box-shadow: 1px 1px 0 #0d2b45;
+}
+
+.tree-node.owned {
+  box-shadow:
+    1px 1px 0 #0d2b45,
+    inset 1px 1px 0 var(--gold-hot);
+}
+
+.tree-node.buyable {
+  animation: node-buy 0.9s steps(2, end) infinite;
+}
+
+.tree-node.sel {
+  z-index: 2;
+}
+
+.tree-sel-ring {
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--foam);
+  pointer-events: none;
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+@keyframes node-buy {
+  0%,
+  100% {
+    box-shadow: 1px 1px 0 #0d2b45;
+  }
+  50% {
+    box-shadow:
+      -1px 0 0 var(--gold-hot),
+      1px 0 0 var(--gold-hot),
+      0 -1px 0 var(--gold-hot),
+      0 1px 0 var(--gold-hot);
+  }
 }
 
 .pix {
@@ -307,17 +443,23 @@ body,
   padding: 0 6px;
   background: var(--ink2);
   border-top: 1px solid var(--gold);
+  z-index: 2;
+}
+
+.tree-inspect.hot {
+  border-top-color: var(--gold-hot);
+  background: #544e68;
 }
 
 .tree-title {
   font-size: 8px;
-  color: var(--foam);
+  color: var(--gold-hot);
 }
 
 .tree-blurb {
   margin-top: 2px;
   font-size: 6px;
-  color: var(--sage);
+  color: var(--foam);
 }
 
 .tree-buy {
@@ -348,6 +490,6 @@ body,
 }
 
 .lvl {
-  color: var(--sage);
+  color: var(--gold);
   font-size: 6px;
 }

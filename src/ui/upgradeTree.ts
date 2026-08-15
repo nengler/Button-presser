@@ -1,5 +1,6 @@
 import { UPGRADE_DEFS } from "../game/upgrades.ts";
 import type { UpgradeId } from "../game/types.ts";
+import { COLORS } from "../game/view.ts";
 import {
   EXTRA_PADS,
   MINION_COST,
@@ -11,6 +12,48 @@ import {
 } from "../game/pads.ts";
 
 export const NODE = 16;
+
+export const NODE_TINT: Record<string, string> = {
+  warmup: COLORS.gold,
+  multiplier: COLORS.goldHot,
+  focus: COLORS.miss,
+  combo: COLORS.gold,
+  tempo: COLORS.goldHot,
+  minion: COLORS.foam,
+  "pad-b": COLORS.goldHot,
+  "pad-c": COLORS.miss,
+};
+
+/** Pixel specks behind the constellation. */
+export const TREE_STARS: { x: number; y: number; c: string; d: number }[] = [
+  { x: 8, y: 14, c: COLORS.foam, d: 0 },
+  { x: 28, y: 6, c: COLORS.goldHot, d: 1 },
+  { x: 52, y: 22, c: COLORS.gold, d: 2 },
+  { x: 70, y: 8, c: COLORS.foam, d: 0 },
+  { x: 118, y: 18, c: COLORS.goldHot, d: 1 },
+  { x: 134, y: 4, c: COLORS.gold, d: 2 },
+  { x: 176, y: 26, c: COLORS.foam, d: 0 },
+  { x: 198, y: 10, c: COLORS.gold, d: 1 },
+  { x: 244, y: 20, c: COLORS.goldHot, d: 2 },
+  { x: 268, y: 6, c: COLORS.foam, d: 0 },
+  { x: 300, y: 28, c: COLORS.gold, d: 1 },
+  { x: 14, y: 58, c: COLORS.goldHot, d: 2 },
+  { x: 46, y: 72, c: COLORS.foam, d: 0 },
+  { x: 62, y: 40, c: COLORS.gold, d: 1 },
+  { x: 108, y: 78, c: COLORS.goldHot, d: 2 },
+  { x: 168, y: 66, c: COLORS.foam, d: 0 },
+  { x: 188, y: 86, c: COLORS.gold, d: 1 },
+  { x: 236, y: 74, c: COLORS.goldHot, d: 0 },
+  { x: 258, y: 98, c: COLORS.foam, d: 2 },
+  { x: 292, y: 80, c: COLORS.gold, d: 1 },
+  { x: 310, y: 54, c: COLORS.goldHot, d: 0 },
+  { x: 6, y: 108, c: COLORS.gold, d: 1 },
+  { x: 38, y: 120, c: COLORS.foam, d: 2 },
+  { x: 96, y: 114, c: COLORS.goldHot, d: 0 },
+  { x: 154, y: 122, c: COLORS.gold, d: 1 },
+  { x: 220, y: 118, c: COLORS.foam, d: 2 },
+  { x: 280, y: 110, c: COLORS.goldHot, d: 0 },
+];
 
 /** 8×8 glyphs: X = on, . = off */
 export const ICONS: Record<string, Glyph> = {
