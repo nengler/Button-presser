@@ -6,6 +6,18 @@ The UI is a **320×180** pixel stage (16:9), integer-scaled to the window. Pads 
 
 Press on every beat (about once per second). The closer you are to the exact beat, the more points you earn. Spend points on a skill tree as you go.
 
+## Play on your phone (GitHub Pages)
+
+After this is merged to `main`, GitHub Actions builds `dist/` and publishes it.
+
+1. In the GitHub repo: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. Wait for the **Deploy GitHub Pages** workflow on `main` (Actions tab). You can also run it with **Run workflow**.
+3. Open **https://nengler.github.io/Button-presser/** on your phone.
+
+The site is public. Progress still saves in the browser (`localStorage`), so it stays on that device.
+
+If the workflow fails with a Pages permission error, the repo may be private — GitHub Pages on private repos needs GitHub Pro/Team, or make the repo public.
+
 ## Quick start
 
 ```bash
