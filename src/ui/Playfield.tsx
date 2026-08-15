@@ -5,14 +5,10 @@ import { COLORS, HEIGHT, WIDTH } from "../game/view.ts";
 import { fadeOnInk, fillDisc, fillRing, fillSweepRing } from "./pixelDraw.ts";
 import { hitPad, pointerToCanvas } from "./pointer.ts";
 
-const MOSS_IN = 32;
-const MOSS_OUT = 34;
-const SWEEP_IN = 35;
-const SWEEP_OUT = 38;
-const PULSE_R0 = 25;
-const PULSE_R1 = 34;
-const PIP_R0 = 3;
-const PIP_R1 = 7;
+const RING_IN = 30;
+const RING_OUT = 34;
+const PIP_R0 = 2;
+const PIP_R1 = 5;
 const MINION_ORBIT = 50;
 const MINION_R = 4;
 const MINION_SPIN = 0.85;
@@ -38,16 +34,13 @@ function drawBeat(
   color: string,
 ) {
   const near = 1 - Math.min(phase, 1 - phase) * 2;
-  const pulseR = Math.round(PULSE_R0 + near * (PULSE_R1 - PULSE_R0));
-  const pipR = Math.max(1, Math.round(PIP_R0 + near * (PIP_R1 - PIP_R0)));
+  const pipR = Math.max(2, Math.round(PIP_R0 + near * (PIP_R1 - PIP_R0)));
 
-  ctx.fillStyle = fadeOnInk(color, 0.16 + near * 0.28);
-  fillRing(ctx, cx, cy, pulseR - 2, pulseR);
   ctx.fillStyle = COLORS.moss;
-  fillRing(ctx, cx, cy, MOSS_IN, MOSS_OUT);
+  fillRing(ctx, cx, cy, RING_IN, RING_OUT);
   ctx.fillStyle = color;
-  fillSweepRing(ctx, cx, cy, SWEEP_IN, SWEEP_OUT, Math.max(0.001, phase * Math.PI * 2));
-  ctx.fillStyle = COLORS.goldHot;
+  fillSweepRing(ctx, cx, cy, RING_IN, RING_OUT, Math.max(0.001, phase * Math.PI * 2));
+  ctx.fillStyle = fadeOnInk(COLORS.goldHot, 0.5 + near * 0.5);
   fillDisc(ctx, cx, cy, pipR);
 }
 
