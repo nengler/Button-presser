@@ -13,7 +13,7 @@
     "electron": "npm run build && electron .",
     "preview": "vite preview",
     "clean": "rm -rf dist dist-electron",
-    "test": "tsx --test src/**/*.test.ts",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt",
