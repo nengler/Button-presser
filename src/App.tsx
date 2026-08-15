@@ -11,8 +11,7 @@ import "./ui/styles.css";
 export function App() {
   const [treeOpen, setTreeOpen] = useState(false);
   const scale = usePixelScale();
-  const { game, snap, pressFlashUntil, pressMain, toggleRun, buyUpgrade, reset } =
-    useGame();
+  const { game, snap, pressMain, buyUpgrade, reset } = useGame();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -36,13 +35,7 @@ export function App() {
       <div className="frame" style={{ width: WIDTH * scale, height: HEIGHT * scale }}>
         <div className="stage" style={{ transform: `scale(${scale})` }}>
           <Playfield game={game} />
-          <Hud
-            snap={snap}
-            pressFlashUntil={pressFlashUntil}
-            onToggle={toggleRun}
-            onPress={pressMain}
-            onTree={() => setTreeOpen(true)}
-          />
+          <Hud snap={snap} onTree={() => setTreeOpen(true)} />
           {treeOpen ? (
             <UpgradeTree
               snap={snap}
