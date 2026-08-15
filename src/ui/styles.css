@@ -29,15 +29,35 @@ body,
 }
 
 .page {
+  position: relative;
   height: 100%;
   display: grid;
   place-items: center;
   padding: 0;
+  background: transparent;
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sky canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .frame {
   position: relative;
   overflow: hidden;
+  z-index: 1;
 }
 
 .stage {
@@ -46,7 +66,7 @@ body,
   top: 0;
   width: 320px;
   height: 180px;
-  background: var(--ink);
+  background: transparent;
   overflow: hidden;
   transform-origin: 0 0;
   image-rendering: crisp-edges;
