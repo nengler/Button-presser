@@ -81,7 +81,7 @@ export class Game {
   start(): void {
     if (this.running) return;
     this.running = true;
-    this.origin = performance.now();
+    // Keep origin at 0 so the first hit is judged against the idle ring sweep.
     this.streak = 0;
     this.usedBeats.clear();
     this.lastResult = null;
@@ -150,16 +150,16 @@ export class Game {
   }
 
   /**
-   * Hit a pad. Main pad updates HUD streak/grade; extra pads only add score.
-   * Returns false if the game is paused, the pad is locked, or that extra beat
-   * was already used.
+   * Hit a pad. The first hit starts the session and still scores.
+   * Main pad updates HUD streak/grade; extra pads only add score.
+   * Returns false if the pad is locked or that extra beat was already used.
    */
   press(
     id = MAIN_PAD.id,
     now = performance.now(),
     opts: { fromStar?: boolean } = {},
   ): boolean {
-    if (!this.running) return false;
+    if (!this.running) this.start();
     if (id === MAIN_PAD.id) {
       this.ping(id);
       this.pressMain(now, opts.fromStar === true);

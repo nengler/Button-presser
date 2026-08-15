@@ -2,6 +2,7 @@
  * Zero-dep smoke checks for timing/scoring (run: node --experimental-strip-types won't work on compiled).
  * Prefer: npm run build && node scripts/smoke.mjs
  */
+import { Game } from "../src/game/Game.ts";
 import { nearestBeatError, pairCompletes, scorePress, withinDoubleGap } from "../src/game/timing.ts";
 import { starAimErrorMs, starAttemptEvery, windowMs } from "../src/game/upgrades.ts";
 import { MAIN_PAD } from "../src/game/pads.ts";
@@ -106,6 +107,32 @@ const interval = 1000;
   assert(pairCompletes(4, 5), "pair scores on the next beat");
   assert(!pairCompletes(4, 6), "pair resets if a beat is skipped");
   assert(!pairCompletes(-1, 0), "first success does not score a pair");
+}
+
+{
+  globalThis.localStorage = {
+    getItem() {
+      return null;
+    },
+    setItem() {},
+    removeItem() {},
+    clear() {},
+    key() {
+      return null;
+    },
+    length: 0,
+  };
+
+  const onBeat = new Game();
+  assert(onBeat.press(MAIN_PAD.id, 8000), "first on-beat press should start and score");
+  const hit = onBeat.snapshot();
+  assert(hit.running, "first press should start the session");
+  assert(hit.lastResult?.grade === "perfect", `expected perfect, got ${hit.lastResult?.grade}`);
+  assert(hit.score > 0, "first press should add points");
+
+  const late = new Game();
+  late.press(MAIN_PAD.id, 8000 + windowMs(0) + 1);
+  assert(late.snapshot().lastResult?.grade === "miss", "first press still misses when far from the beat");
 }
 
 console.log("smoke ok");

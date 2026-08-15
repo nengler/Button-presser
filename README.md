@@ -36,8 +36,8 @@ npm run electron   # desktop window (production build)
 
 ## How to play
 
-1. Click **Start** (or press Space).
-2. Click **Press** / Space / a ring on each beat.
+1. Click a ring or press Space on a beat. The first hit scores.
+2. Keep hitting rings / Space on each beat.
 3. Grades: perfect → great → good → ok → miss. Misses break your streak.
 4. Open **TREE** to buy upgrades. Paths gate later nodes. Progress saves in `localStorage`.
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Game } from "../game/Game.ts";
-import { MAIN_PAD, padById, starsOnStation } from "../game/pads.ts";
+import { padById, starsOnStation } from "../game/pads.ts";
 import { COLORS, HEIGHT, WIDTH } from "../game/view.ts";
 import { fadeOnInk, fillDisc, fillRing, fillStar, fillSweepRing } from "./pixelDraw.ts";
 import { hitPad, pointerToCanvas } from "./pointer.ts";
@@ -153,9 +153,7 @@ export function Playfield({ game }: { game: Game }) {
       e.preventDefault();
       const id = hitPad(gameRef.current.pads(), pos.x, pos.y);
       if (!id) return;
-      const g = gameRef.current;
-      if (!g.snapshot().running && id === MAIN_PAD.id) g.start();
-      else g.press(id);
+      gameRef.current.press(id);
     };
 
     const onPointerMove = (e: PointerEvent) => {

@@ -22,12 +22,11 @@ export function App() {
       if (treeOpen) return;
       if (e.code !== "Space" && e.key !== " ") return;
       e.preventDefault();
-      if (!game.snapshot().running) game.start();
-      else pressMain();
+      pressMain();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [game, pressMain, treeOpen]);
+  }, [pressMain, treeOpen]);
 
   return (
     <div className="page">
