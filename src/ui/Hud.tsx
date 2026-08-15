@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameSnapshot } from "../game/Game.ts";
 import { COLORS } from "../game/view.ts";
+import { useLerpedScore } from "./useLerpedScore.ts";
 
 const FLY_MS = 480;
 const GRADE_MS = 560;
@@ -152,6 +153,7 @@ export function Hud({
 
   const strNudge = useNudge(snap.streak);
   const bestNudge = useNudge(snap.bestStreak);
+  const scoreText = useLerpedScore(shown);
 
   useEffect(() => {
     if (snap.hitNonce === gradeNonceRef.current) return;
@@ -231,7 +233,7 @@ export function Hud({
       </button>
 
       <div className="stats">
-        <span className={`stat gold${pop ? " pop" : ""}`}>SCR {shown}</span>
+        <span className={`stat gold${pop ? " pop" : ""}`}>SCR {scoreText}</span>
         <span className={`stat${strNudge ? " nudge" : ""}`}>STR {snap.streak}</span>
         <span className={`stat sage${bestNudge ? " nudge" : ""}`}>BEST {snap.bestStreak}</span>
       </div>
