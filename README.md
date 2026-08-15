@@ -41,7 +41,7 @@ npm run electron   # desktop window (production build)
 3. Grades: perfect → great → good → ok → miss. Misses break your streak.
 4. Open **TREE** to buy upgrades. Paths gate later nodes. Progress saves in `localStorage`.
 
-WARM unlocks MULT and FOCUS. Those merge into STAR (helpers that tap leftover beats you miss). Stars start slow and late. Buy PULSE and AIM to make them fire more often and closer to the beat. Stars also unlock extra pads: a 1.5s timer, a 3s double-tap, and a 0.75s pad that only scores every two hits in a row.
+EVERY is the root: bonus points every few successful hits (more often and bigger as you rank it up). That unlocks MULT, FOCUS, and PERF. SHIELD ignores a miss without breaking streak. CLUTCH pays extra on the hit after a miss. MULT and FOCUS merge into STAR (helpers that tap leftover beats you miss). Stars start slow and late — buy PULSE, AIM, and SHARE so they fire more often, closer to the beat, and with a cut of your scoring upgrades. PADS makes extra pads worth more. Extra pads: a 1.5s timer, a 3s double-tap, and a 0.75s pad that only scores every two hits in a row.
 
 ## Layout
 

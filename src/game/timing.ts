@@ -1,6 +1,7 @@
 import type { PressResult } from "./types.ts";
 import {
   comboFactor,
+  perfectPayFactor,
   scoreMultiplier,
   windowMs,
 } from "./upgrades.ts";
@@ -20,6 +21,7 @@ export function scorePress(opts: {
   focusLevel: number;
   multiplierLevel: number;
   comboLevel: number;
+  perfectLevel?: number;
   streakBefore: number;
   beatIndex: number;
 }): PressResult {
@@ -41,16 +43,20 @@ export function scorePress(opts: {
   const curve = Math.pow(closeness, 1.35);
   const base = 8 + curve * 70;
   const streak = opts.streakBefore + 1;
-  const points = Math.round(
-    base *
-      scoreMultiplier(opts.multiplierLevel) *
-      comboFactor(streak, opts.comboLevel),
-  );
 
   let grade: PressResult["grade"] = "ok";
   if (ratio <= GRADE_THRESHOLDS.perfect) grade = "perfect";
   else if (ratio <= GRADE_THRESHOLDS.great) grade = "great";
   else if (ratio <= GRADE_THRESHOLDS.good) grade = "good";
+
+  const perfectBoost =
+    grade === "perfect" ? perfectPayFactor(opts.perfectLevel ?? 0) : 1;
+  const points = Math.round(
+    base *
+      scoreMultiplier(opts.multiplierLevel) *
+      comboFactor(streak, opts.comboLevel) *
+      perfectBoost,
+  );
 
   return {
     errorMs: opts.errorMs,

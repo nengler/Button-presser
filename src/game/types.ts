@@ -1,13 +1,18 @@
 /** Shared types for the timing game. */
 
 export type UpgradeId =
+  | "bonusHits"
   | "multiplier"
   | "focus"
   | "tempo"
   | "combo"
-  | "warmup"
+  | "perfectPay"
+  | "shield"
+  | "recovery"
   | "starRate"
-  | "starAim";
+  | "starAim"
+  | "starSkill"
+  | "padPay";
 
 export type PadKind = "beat" | "double" | "pair";
 
@@ -15,13 +20,15 @@ export interface UpgradeDef {
   id: UpgradeId;
   name: string;
   description: string;
+  /** Short inspect line for the owned (or next) level. */
+  effect(level: number): string;
   /** Cost of the next level given the current owned level. */
   cost(level: number): number;
   maxLevel: number;
 }
 
 export interface GameSave {
-  version: 3;
+  version: 4;
   score: number;
   bestStreak: number;
   upgrades: Record<UpgradeId, number>;
