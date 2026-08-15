@@ -1,7 +1,11 @@
+import type { PadKind } from "./types.ts";
 import { COLORS } from "./view.ts";
 
-export const MINION_COST = 80;
-export const MINION_MAX = 4;
+export const STAR_COST = 220;
+export const STAR_MAX = 4;
+
+/** Max gap between the two taps of a double pad. */
+export const DOUBLE_GAP_MS = 280;
 
 /** 8×8 glyph: `X` on, `.` off. */
 export type Glyph = readonly string[];
@@ -9,6 +13,7 @@ export type Glyph = readonly string[];
 export type PadDef = {
   id: string;
   name: string;
+  kind: PadKind;
   interval: number;
   cost: number;
   /** Center on the 320×180 stage (pixels, Y down). */
@@ -27,26 +32,28 @@ export type ExtraPadDef = PadDef & {
 export const MAIN_PAD: PadDef = {
   id: "main",
   name: "PAD A",
+  kind: "beat",
   interval: 1000,
   cost: 0,
-  x: 104,
-  y: 77,
+  x: 88,
+  y: 88,
   color: COLORS.gold,
 };
 
 /** Playfield, unlocks, and skill tree all read this list. */
 export const EXTRA_PADS = [
   {
-    id: "pad-b",
-    name: "PAD B",
-    interval: 1400,
-    cost: 120,
-    x: 216,
-    y: 49,
+    id: "pad-slow",
+    name: "1.5s",
+    kind: "beat",
+    interval: 1500,
+    cost: 280,
+    x: 176,
+    y: 48,
     color: COLORS.sage,
-    treeX: 212,
+    treeX: 128,
     treeY: 8,
-    blurb: "Extra pad, 1.4s timer",
+    blurb: "Second pad on a 1.5s timer",
     icon: [
       "........",
       ".XXXXXX.",
@@ -59,16 +66,40 @@ export const EXTRA_PADS = [
     ],
   },
   {
-    id: "pad-c",
-    name: "PAD C",
-    interval: 720,
-    cost: 180,
-    x: 216,
-    y: 131,
+    id: "pad-twin",
+    name: "TWIN",
+    kind: "double",
+    interval: 3000,
+    cost: 420,
+    x: 256,
+    y: 92,
+    color: COLORS.goldHot,
+    treeX: 184,
+    treeY: 8,
+    blurb: "Double-tap each 3s beat",
+    icon: [
+      "........",
+      ".XX..XX.",
+      ".XX..XX.",
+      "........",
+      ".XX..XX.",
+      ".XX..XX.",
+      "........",
+      "........",
+    ],
+  },
+  {
+    id: "pad-pair",
+    name: "PAIR",
+    kind: "pair",
+    interval: 750,
+    cost: 520,
+    x: 168,
+    y: 140,
     color: COLORS.miss,
-    treeX: 276,
-    treeY: 48,
-    blurb: "Extra pad, 0.7s timer",
+    treeX: 240,
+    treeY: 28,
+    blurb: "0.75s beat — two hits in a row to score",
     icon: [
       "........",
       ".XXXX...",
@@ -101,11 +132,11 @@ export function padById(id: string): PadDef {
   return BY_ID.get(id) ?? MAIN_PAD;
 }
 
-export function minionsOnStation(
-  minions: number,
+export function starsOnStation(
+  stars: number,
   index: number,
   stations: number,
 ): number {
   if (stations <= 0) return 0;
-  return Math.floor(minions / stations) + (index < minions % stations ? 1 : 0);
+  return Math.floor(stars / stations) + (index < stars % stations ? 1 : 0);
 }

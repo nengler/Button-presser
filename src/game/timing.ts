@@ -39,7 +39,7 @@ export function scorePress(opts: {
 
   const closeness = 1 - ratio;
   const curve = Math.pow(closeness, 1.35);
-  const base = 10 + curve * 90;
+  const base = 8 + curve * 70;
   const streak = opts.streakBefore + 1;
   const points = Math.round(
     base *
@@ -72,4 +72,21 @@ export function nearestBeatError(
   const beatIndex = Math.round(exact);
   const beatTime = origin + beatIndex * interval;
   return { errorMs: now - beatTime, beatIndex };
+}
+
+export function withinDoubleGap(
+  firstAt: number,
+  secondAt: number,
+  gapMs: number,
+): boolean {
+  const dt = secondAt - firstAt;
+  return dt > 0 && dt <= gapMs;
+}
+
+/** Second consecutive in-window hit scores. A gap in beat index restarts the pair. */
+export function pairCompletes(
+  lastSuccessBeat: number,
+  beatIndex: number,
+): boolean {
+  return lastSuccessBeat >= 0 && beatIndex === lastSuccessBeat + 1;
 }

@@ -5,7 +5,11 @@ export type UpgradeId =
   | "focus"
   | "tempo"
   | "combo"
-  | "warmup";
+  | "warmup"
+  | "starRate"
+  | "starAim";
+
+export type PadKind = "beat" | "double" | "pair";
 
 export interface UpgradeDef {
   id: UpgradeId;
@@ -17,18 +21,20 @@ export interface UpgradeDef {
 }
 
 export interface GameSave {
-  version: 2;
+  version: 3;
   score: number;
   bestStreak: number;
   upgrades: Record<UpgradeId, number>;
-  minions: number;
+  stars: number;
   unlockedPads: string[];
 }
+
+export type Grade = "perfect" | "great" | "good" | "ok" | "miss" | "set";
 
 export interface PressResult {
   errorMs: number;
   points: number;
-  grade: "perfect" | "great" | "good" | "ok" | "miss";
+  grade: Grade;
   streak: number;
   beatIndex: number;
 }

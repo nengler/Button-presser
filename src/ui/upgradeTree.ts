@@ -3,8 +3,8 @@ import type { UpgradeId } from "../game/types.ts";
 import { COLORS } from "../game/view.ts";
 import {
   EXTRA_PADS,
-  MINION_COST,
-  MINION_MAX,
+  STAR_COST,
+  STAR_MAX,
   extraPadById,
   isExtraPadId,
   type ExtraPadId,
@@ -19,9 +19,12 @@ export const NODE_TINT: Record<string, string> = {
   focus: COLORS.miss,
   combo: COLORS.gold,
   tempo: COLORS.goldHot,
-  minion: COLORS.foam,
-  "pad-b": COLORS.goldHot,
-  "pad-c": COLORS.miss,
+  star: COLORS.foam,
+  starRate: COLORS.foam,
+  starAim: COLORS.goldHot,
+  "pad-slow": COLORS.sage,
+  "pad-twin": COLORS.goldHot,
+  "pad-pair": COLORS.miss,
 };
 
 /** Pixel specks behind the constellation. */
@@ -107,20 +110,40 @@ export const ICONS: Record<string, Glyph> = {
     ".XX..XX.",
     "........",
   ],
-  minion: [
+  star: [
     "........",
-    "..XXXX..",
-    ".XXXXXX.",
-    ".XX..XX.",
-    ".XXXXXX.",
-    "..XXXX..",
-    ".XX..XX.",
+    "...X....",
+    "..XXX...",
+    "XXXXXXX.",
+    "..XXX...",
+    ".XX.XX..",
+    ".X...X..",
+    "........",
+  ],
+  starRate: [
+    "........",
+    "...XX...",
+    "..X..X..",
+    ".X.X..X.",
+    ".X....X.",
+    "..X..X..",
+    "...XX...",
+    "........",
+  ],
+  starAim: [
+    "........",
+    "...X....",
+    "...X....",
+    ".XXXXX..",
+    "...X....",
+    "...X....",
+    "........",
     "........",
   ],
   ...Object.fromEntries(EXTRA_PADS.map((p) => [p.id, p.icon])),
 };
 
-export type TreeNodeId = UpgradeId | "minion" | ExtraPadId;
+export type TreeNodeId = UpgradeId | "star" | ExtraPadId;
 
 export type TreeNode = {
   id: TreeNodeId;
@@ -134,62 +157,78 @@ export type TreeNode = {
 const UPGRADE_NODES: TreeNode[] = [
   {
     id: "warmup",
-    x: 20,
-    y: 96,
+    x: 16,
+    y: 100,
     parents: [],
     title: "WARM",
     blurb: "Start with a point cushion",
   },
   {
     id: "multiplier",
-    x: 84,
-    y: 96,
+    x: 72,
+    y: 100,
     parents: ["warmup"],
     title: "MULT",
     blurb: "More points per hit",
   },
   {
     id: "focus",
-    x: 148,
-    y: 96,
+    x: 128,
+    y: 100,
     parents: ["warmup"],
     title: "FOCUS",
     blurb: "Wider timing window",
   },
   {
     id: "combo",
-    x: 84,
-    y: 48,
+    x: 72,
+    y: 64,
     parents: ["multiplier"],
     title: "COMBO",
     blurb: "Streaks pay harder",
   },
   {
     id: "tempo",
-    x: 148,
-    y: 48,
+    x: 128,
+    y: 64,
     parents: ["focus"],
     title: "TEMPO",
     blurb: "Slower beat, easier settle",
   },
   {
-    id: "minion",
-    x: 212,
-    y: 48,
+    id: "star",
+    x: 184,
+    y: 64,
     parents: ["multiplier", "focus"],
-    title: "MINION",
-    blurb: "Hires a helper on leftover beats",
+    title: "STAR",
+    blurb: "Hires a star that taps leftover beats. Starts rare.",
+  },
+  {
+    id: "starRate",
+    x: 184,
+    y: 28,
+    parents: ["star"],
+    title: "PULSE",
+    blurb: "Stars attempt leftover beats more often",
+  },
+  {
+    id: "starAim",
+    x: 240,
+    y: 64,
+    parents: ["star"],
+    title: "AIM",
+    blurb: "Stars tap closer to the beat",
   },
 ];
 
-/** Bottom roots → top/right advanced, with a merge into minion. */
+/** Bottom roots → top/right advanced, with a merge into star. */
 export const TREE_NODES: TreeNode[] = [
   ...UPGRADE_NODES,
   ...EXTRA_PADS.map((pad) => ({
     id: pad.id,
     x: pad.treeX,
     y: pad.treeY,
-    parents: ["minion"] as TreeNodeId[],
+    parents: ["star"] as TreeNodeId[],
     title: pad.name,
     blurb: pad.blurb,
   })),
@@ -206,16 +245,16 @@ export type NodeProgress = {
 export function nodeProgress(
   id: TreeNodeId,
   upgrades: Record<UpgradeId, number>,
-  minions: number,
+  stars: number,
   unlockedPads: string[],
 ): NodeProgress {
-  if (id === "minion") {
+  if (id === "star") {
     return {
-      level: minions,
-      max: MINION_MAX,
-      cost: minions >= MINION_MAX ? null : MINION_COST,
-      owned: minions > 0,
-      maxed: minions >= MINION_MAX,
+      level: stars,
+      max: STAR_MAX,
+      cost: stars >= STAR_MAX ? null : STAR_COST,
+      owned: stars > 0,
+      maxed: stars >= STAR_MAX,
     };
   }
   if (isExtraPadId(id)) {

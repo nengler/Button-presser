@@ -41,7 +41,7 @@ export function App() {
               snap={snap}
               onBack={() => setTreeOpen(false)}
               onBuyUpgrade={buyUpgrade}
-              onHireMinion={() => game.hireMinion()}
+              onHireStar={() => game.hireStar()}
               onUnlockPad={(id) => game.unlockPad(id)}
               onReset={reset}
             />
