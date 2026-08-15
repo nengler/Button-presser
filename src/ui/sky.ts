@@ -14,10 +14,9 @@ function rgb(hex: string): [number, number, number] {
 
 const RGB: readonly [number, number, number][] = PALETTE.map(rgb);
 
-/** Cream is stars only — sky bands stop at peach. */
-const SKY_LAST = RGB.length - 2;
-const HORIZON = 0.68;
-const BAND = 55;
+const LAST = RGB.length - 1;
+/** Push the old dusk curve toward the bottom of the window. */
+const FALL = 1.75;
 
 let pixels: ImageData | undefined;
 
@@ -27,29 +26,26 @@ function hash(x: number, y: number): number {
 
 function warmth(x: number, y: number, w: number, h: number, t: number): number {
   const u = x / w;
-  const v = y / h;
+  const v = Math.pow(y / h, FALL);
   const dx = u - 0.5;
-  const hv = v - HORIZON;
-  const band = Math.max(0, 1 - hv * hv * BAND);
   return (
-    0.05 +
-    v * 0.1 +
-    band * 0.5 +
-    0.03 * Math.sin(u * 3.6 + t * 0.11) +
-    0.02 * Math.sin((u + v) * 5.2 - t * 0.07) +
-    0.015 * Math.sin(t * 0.22) -
-    dx * dx * 0.06
+    v * 0.52 +
+    v * v * 0.28 +
+    0.07 * Math.sin(u * 3.6 + t * 0.11) +
+    0.045 * Math.sin((u + v) * 5.2 - t * 0.07) +
+    0.03 * Math.sin(t * 0.22) -
+    dx * dx * 0.1
   );
 }
 
 function starlit(x: number, y: number, h: number, t: number): boolean {
-  if (y >= h * HORIZON * 0.92) return false;
+  if (y / h > 0.62) return false;
   const hy = hash(x, y);
   if (hy % 1601 !== 0) return false;
   return 0.45 + 0.55 * Math.sin(t * 1.4 + (hy % 97)) > 0.38;
 }
 
-/** Night sky + a thin dusk band. Mapped to the full canvas, not the 180px stage. */
+/** Same dusk as the 180px sky, stretched so night lasts longer and sun sits at the bottom. */
 export function drawSky(
   ctx: CanvasRenderingContext2D,
   elapsed: number,
@@ -61,23 +57,14 @@ export function drawSky(
   }
   const data = pixels.data;
   const t = elapsed;
-  const cream = RGB[RGB.length - 1]!;
   let i = 0;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      if (starlit(x, y, h, t)) {
-        data[i] = cream[0];
-        data[i + 1] = cream[1];
-        data[i + 2] = cream[2];
-        data[i + 3] = 255;
-        i += 4;
-        continue;
-      }
       const n = Math.max(0, Math.min(1, warmth(x, y, w, h, t)));
-      const scaled = n * SKY_LAST;
-      const lo = Math.min(SKY_LAST - 1, Math.floor(scaled));
+      const scaled = n * LAST;
+      const lo = Math.min(LAST - 1, Math.floor(scaled));
       const pick = scaled - lo > BAYER[y & 3]![x & 3]! / 16 ? lo + 1 : lo;
-      const c = RGB[pick]!;
+      const c = starlit(x, y, h, t) ? RGB[LAST]! : RGB[pick]!;
       data[i] = c[0];
       data[i + 1] = c[1];
       data[i + 2] = c[2];

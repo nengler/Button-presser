@@ -34,6 +34,9 @@ export type GameSnapshot = {
   running: boolean;
   minions: number;
   unlockedPads: string[];
+  hitNonce: number;
+  hitX: number;
+  hitY: number;
 };
 
 export class Game {
@@ -199,6 +202,9 @@ export class Game {
       running: this.running,
       minions: this.save.minions,
       unlockedPads: [...this.save.unlockedPads],
+      hitNonce: this.burst.nonce,
+      hitX: this.burst.x,
+      hitY: this.burst.y,
     };
   }
 

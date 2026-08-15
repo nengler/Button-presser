@@ -94,16 +94,12 @@ body,
   image-rendering: pixelated;
 }
 
-.brand,
 .stats,
-.feedback,
-.hint,
-.controls {
+.score-chip {
   pointer-events: none;
 }
 
-.tree-open,
-.controls button {
+.tree-open {
   pointer-events: auto;
 }
 
@@ -118,27 +114,10 @@ body,
   image-rendering: pixelated;
 }
 
-.brand {
-  position: absolute;
-  left: 8px;
-  top: 6px;
-}
-
-.title {
-  font-size: 10px;
-  color: var(--foam);
-}
-
-.tag {
-  color: var(--sage);
-  font-size: 7px;
-  margin-top: 2px;
-}
-
 .stats {
   position: absolute;
   left: 8px;
-  top: 34px;
+  top: 6px;
   display: flex;
   gap: 10px;
   font-size: 8px;
@@ -148,32 +127,19 @@ body,
   color: var(--gold-hot);
 }
 
+.stats .gold.pop {
+  color: var(--foam);
+}
+
 .stats .sage {
   color: var(--sage);
 }
 
-.feedback {
+.score-chip {
   position: absolute;
-  left: 0;
-  width: 320px;
-  top: 108px;
-  text-align: center;
+  z-index: 4;
   font-size: 9px;
-}
-
-.feedback .err {
-  color: var(--dim);
-  font-size: 7px;
-  margin-top: 2px;
-}
-
-.controls {
-  position: absolute;
-  left: 8px;
-  top: 128px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  white-space: nowrap;
 }
 
 .btn {
@@ -200,16 +166,6 @@ body,
 
 .btn.press.flash {
   background: var(--gold-hot);
-}
-
-.hint {
-  position: absolute;
-  left: 50px;
-  top: 26px;
-  color: var(--dim);
-  font-size: 6px;
-  width: 90px;
-  text-align: center;
 }
 
 .tree-open {
