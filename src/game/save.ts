@@ -1,4 +1,4 @@
-import type { GameSave } from "./types.ts";
+import type { GameSave, UpgradeId } from "./types.ts";
 import { extraPadById } from "./pads.ts";
 import { emptyUpgrades } from "./upgrades.ts";
 
@@ -6,13 +6,26 @@ const SAVE_KEY = "button-presser-save-v1";
 
 export function defaultSave(): GameSave {
   return {
-    version: 3,
+    version: 4,
     score: 0,
     bestStreak: 0,
     upgrades: emptyUpgrades(),
     stars: 0,
     unlockedPads: [],
   };
+}
+
+function migrateUpgrades(raw: Record<string, unknown> | undefined): GameSave["upgrades"] {
+  const next = emptyUpgrades();
+  if (!raw || typeof raw !== "object") return next;
+  for (const id of Object.keys(next) as UpgradeId[]) {
+    const n = raw[id];
+    if (typeof n === "number" && Number.isFinite(n)) next[id] = Math.max(0, n);
+  }
+  if (next.bonusHits === 0 && typeof raw.warmup === "number") {
+    next.bonusHits = Math.max(0, raw.warmup);
+  }
+  return next;
 }
 
 export function loadSave(): GameSave {
@@ -23,12 +36,17 @@ export function loadSave(): GameSave {
       version?: number;
       score?: number;
       bestStreak?: number;
-      upgrades?: Partial<GameSave["upgrades"]>;
+      upgrades?: Record<string, unknown>;
       stars?: number;
       minions?: number;
       unlockedPads?: unknown;
     };
-    if (parsed.version !== 1 && parsed.version !== 2 && parsed.version !== 3) {
+    if (
+      parsed.version !== 1 &&
+      parsed.version !== 2 &&
+      parsed.version !== 3 &&
+      parsed.version !== 4
+    ) {
       return defaultSave();
     }
     const pads = Array.isArray(parsed.unlockedPads)
@@ -43,11 +61,11 @@ export function loadSave(): GameSave {
           ? parsed.minions
           : 0;
     return {
-      version: 3,
+      version: 4,
       score: typeof parsed.score === "number" ? parsed.score : 0,
       bestStreak:
         typeof parsed.bestStreak === "number" ? parsed.bestStreak : 0,
-      upgrades: { ...emptyUpgrades(), ...parsed.upgrades },
+      upgrades: migrateUpgrades(parsed.upgrades),
       stars,
       unlockedPads: pads,
     };

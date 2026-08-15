@@ -17,10 +17,16 @@ import {
 } from "./pads.ts";
 import {
   UPGRADE_DEFS,
+  bonusHitPayout,
+  bonusHitPeriod,
   intervalMs,
+  padPayFactor,
+  recoveryFactor,
+  shieldCharges,
   starAimErrorMs,
   starAttemptEvery,
-  warmupBonus,
+  starShareFactor,
+  windowMs,
 } from "./upgrades.ts";
 
 const STAR_HIT_SLOP_MS = 20;
@@ -69,7 +75,9 @@ export class Game {
   private starSkipMain = 0;
   private extra = new Map<string, ExtraClock>();
   private running = false;
-  private warmupGranted = false;
+  private hitCount = 0;
+  private shieldsLeft = 0;
+  private clutchArmed = false;
   private listeners = new Set<(snap: GameSnapshot) => void>();
 
   subscribe(listener: (snap: GameSnapshot) => void): () => void {
@@ -85,11 +93,8 @@ export class Game {
     this.streak = 0;
     this.usedBeats.clear();
     this.lastResult = null;
-    if (!this.warmupGranted && this.save.upgrades.warmup > 0) {
-      this.save.score += warmupBonus(this.save.upgrades.warmup);
-      this.warmupGranted = true;
-      persistSave(this.save);
-    }
+    this.shieldsLeft = shieldCharges(this.save.upgrades.shield);
+    this.clutchArmed = false;
     this.emit();
   }
 
@@ -223,7 +228,9 @@ export class Game {
     this.starBeatMain = -1;
     this.starSkipMain = 0;
     this.extra.clear();
-    this.warmupGranted = false;
+    this.hitCount = 0;
+    this.shieldsLeft = 0;
+    this.clutchArmed = false;
     this.burst = { nonce: 0, x: 0, y: 0 };
     persistSave(this.save);
     this.emit();
@@ -310,12 +317,12 @@ export class Game {
       clock.pendingTapAt = null;
       clock.pendingBeat = -1;
       clock.used.add(beatIndex);
-      clock.streak = 0;
+      clock.streak = this.protectStreak(clock.streak, false);
       this.lastResult = {
         errorMs: DOUBLE_GAP_MS,
         points: 0,
         grade: "miss",
-        streak: 0,
+        streak: clock.streak,
         beatIndex,
       };
       this.ping(id);
@@ -328,8 +335,14 @@ export class Game {
     const { errorMs, beatIndex } = nearestBeatError(now, this.origin, interval);
 
     if (this.usedBeats.has(beatIndex)) {
-      this.streak = 0;
-      this.lastResult = { errorMs, points: 0, grade: "miss", streak: 0, beatIndex };
+      this.streak = this.protectStreak(this.streak, fromStar);
+      this.lastResult = {
+        errorMs,
+        points: 0,
+        grade: "miss",
+        streak: this.streak,
+        beatIndex,
+      };
       this.emit();
       return;
     }
@@ -342,7 +355,8 @@ export class Game {
       }
     }
 
-    const result = this.scoreHit(errorMs, this.streak, beatIndex, fromStar);
+    const result = this.scoreHit(errorMs, this.streak, beatIndex, fromStar, false);
+    this.applyPayoffs(result, fromStar);
     this.streak = result.streak;
     if (result.streak > this.save.bestStreak) this.save.bestStreak = result.streak;
     this.save.score += result.points;
@@ -365,12 +379,13 @@ export class Game {
     this.trimUsed(clock.used, beatIndex);
     this.ping(id);
 
-    const result = this.scoreHit(errorMs, clock.streak, beatIndex, fromStar);
+    const result = this.scoreHit(errorMs, clock.streak, beatIndex, fromStar, true);
     if (pad.kind === "pair") {
       this.applyPair(clock, result);
     } else {
       clock.streak = result.streak;
     }
+    this.applyPayoffs(result, fromStar);
     this.lastResult = result;
     if (result.points > 0) {
       this.save.score += result.points;
@@ -397,7 +412,8 @@ export class Game {
         clock.used.add(heldBeat);
         this.trimUsed(clock.used, heldBeat);
         this.ping(id);
-        const result = this.scoreHit(heldError, clock.streak, heldBeat, fromStar);
+        const result = this.scoreHit(heldError, clock.streak, heldBeat, fromStar, true);
+        this.applyPayoffs(result, fromStar);
         clock.streak = result.streak;
         this.lastResult = result;
         if (result.points > 0) {
@@ -410,12 +426,12 @@ export class Game {
       clock.pendingTapAt = null;
       clock.pendingBeat = -1;
       clock.used.add(heldBeat >= 0 ? heldBeat : beatIndex);
-      clock.streak = 0;
+      clock.streak = this.protectStreak(clock.streak, fromStar);
       this.lastResult = {
         errorMs,
         points: 0,
         grade: "miss",
-        streak: 0,
+        streak: clock.streak,
         beatIndex: heldBeat >= 0 ? heldBeat : beatIndex,
       };
       this.ping(id);
@@ -425,12 +441,19 @@ export class Game {
 
     if (clock.used.has(beatIndex)) return false;
 
-    const probe = this.scoreHit(errorMs, 0, beatIndex, fromStar);
-    if (probe.grade === "miss") {
+    const share = fromStar ? starShareFactor(this.save.upgrades.starSkill) : 1;
+    const focus = Math.round(this.save.upgrades.focus * share);
+    if (Math.abs(errorMs) >= windowMs(focus)) {
       clock.used.add(beatIndex);
       this.trimUsed(clock.used, beatIndex);
-      clock.streak = 0;
-      this.lastResult = probe;
+      clock.streak = this.protectStreak(clock.streak, fromStar);
+      this.lastResult = {
+        errorMs,
+        points: 0,
+        grade: "miss",
+        streak: clock.streak,
+        beatIndex,
+      };
       this.ping(id);
       this.emit();
       return true;
@@ -453,7 +476,7 @@ export class Game {
 
   private applyPair(clock: ExtraClock, result: PressResult): void {
     if (result.grade === "miss") {
-      clock.streak = 0;
+      clock.streak = result.streak;
       clock.lastSuccessBeat = -1;
       return;
     }
@@ -473,25 +496,61 @@ export class Game {
     streakBefore: number,
     beatIndex: number,
     fromStar: boolean,
+    extraPad: boolean,
   ): PressResult {
-    if (fromStar) {
-      return scorePress({
-        errorMs,
-        focusLevel: 0,
-        multiplierLevel: 0,
-        comboLevel: 0,
-        streakBefore: 0,
-        beatIndex,
-      });
-    }
-    return scorePress({
+    const u = this.save.upgrades;
+    const share = fromStar ? starShareFactor(u.starSkill) : 1;
+    const result = scorePress({
       errorMs,
-      focusLevel: this.save.upgrades.focus,
-      multiplierLevel: this.save.upgrades.multiplier,
-      comboLevel: this.save.upgrades.combo,
-      streakBefore,
+      focusLevel: Math.round(u.focus * share),
+      multiplierLevel: Math.round(u.multiplier * share),
+      comboLevel: Math.round(u.combo * share),
+      perfectLevel: Math.round(u.perfectPay * share),
+      streakBefore: fromStar ? 0 : streakBefore,
       beatIndex,
     });
+
+    if (result.grade === "miss") {
+      result.streak = this.protectStreak(fromStar ? 0 : streakBefore, fromStar);
+      return result;
+    }
+
+    if (extraPad && u.padPay > 0) {
+      result.points = Math.round(result.points * padPayFactor(u.padPay));
+    }
+
+    return result;
+  }
+
+  /** Clutch and every-N bonuses only after a hit actually pays. */
+  private applyPayoffs(result: PressResult, fromStar: boolean): void {
+    if (result.grade === "miss" || result.grade === "set" || result.points <= 0) {
+      return;
+    }
+    const u = this.save.upgrades;
+    if (!fromStar && this.clutchArmed && u.recovery > 0) {
+      result.points = Math.round(result.points * recoveryFactor(u.recovery));
+      this.clutchArmed = false;
+    }
+    if (!fromStar && u.bonusHits > 0) {
+      this.hitCount += 1;
+      const period = bonusHitPeriod(u.bonusHits);
+      if (period > 0 && this.hitCount % period === 0) {
+        result.points += bonusHitPayout(u.bonusHits);
+      }
+    }
+  }
+
+  /** Keep streak on a miss if Shield still has a charge. */
+  private protectStreak(streakBefore: number, fromStar: boolean): number {
+    if (fromStar) return 0;
+    if (this.shieldsLeft > 0) {
+      this.shieldsLeft -= 1;
+      this.clutchArmed = false;
+      return streakBefore;
+    }
+    this.clutchArmed = this.save.upgrades.recovery > 0;
+    return 0;
   }
 
   private trimUsed(used: Set<number>, beatIndex: number): void {

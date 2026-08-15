@@ -51,8 +51,8 @@ export const EXTRA_PADS = [
     x: 176,
     y: 48,
     color: COLORS.sage,
-    treeX: 128,
-    treeY: 8,
+    treeX: 164,
+    treeY: 4,
     blurb: "Second pad on a 1.5s timer",
     icon: [
       "........",
@@ -74,8 +74,8 @@ export const EXTRA_PADS = [
     x: 256,
     y: 92,
     color: COLORS.goldHot,
-    treeX: 184,
-    treeY: 8,
+    treeX: 216,
+    treeY: 4,
     blurb: "Double-tap each 3s beat",
     icon: [
       "........",
@@ -97,8 +97,8 @@ export const EXTRA_PADS = [
     x: 168,
     y: 140,
     color: COLORS.miss,
-    treeX: 240,
-    treeY: 28,
+    treeX: 268,
+    treeY: 4,
     blurb: "0.75s beat — two hits in a row to score",
     icon: [
       "........",

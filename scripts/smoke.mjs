@@ -4,7 +4,15 @@
  */
 import { Game } from "../src/game/Game.ts";
 import { nearestBeatError, pairCompletes, scorePress, withinDoubleGap } from "../src/game/timing.ts";
-import { starAimErrorMs, starAttemptEvery, windowMs } from "../src/game/upgrades.ts";
+import {
+  bonusHitPeriod,
+  bonusHitPayout,
+  perfectPayFactor,
+  starAimErrorMs,
+  starAttemptEvery,
+  starShareFactor,
+  windowMs,
+} from "../src/game/upgrades.ts";
 import { MAIN_PAD } from "../src/game/pads.ts";
 import { HEIGHT, WIDTH } from "../src/game/view.ts";
 import { HIT_R, hitPad, pointerToCanvas } from "../src/ui/pointer.ts";
@@ -96,6 +104,39 @@ const interval = 1000;
   assert(hitPad(pads, MAIN_PAD.x + HIT_R, MAIN_PAD.y) === MAIN_PAD.id, "edge of hit radius should hit");
   assert(hitPad(pads, MAIN_PAD.x + HIT_R + 1, MAIN_PAD.y) === null, "outside hit radius should miss");
   assert(pointerToCanvas(canvas, 99, 50) === null, "letterbox left of canvas should miss");
+}
+
+{
+  const boosted = scorePress({
+    errorMs: 0,
+    focusLevel: 0,
+    multiplierLevel: 0,
+    comboLevel: 0,
+    perfectLevel: 4,
+    streakBefore: 0,
+    beatIndex: 0,
+  });
+  const plain = scorePress({
+    errorMs: 0,
+    focusLevel: 0,
+    multiplierLevel: 0,
+    comboLevel: 0,
+    perfectLevel: 0,
+    streakBefore: 0,
+    beatIndex: 0,
+  });
+  assert(boosted.grade === "perfect", "perfect grade still perfect");
+  assert(boosted.points > plain.points, "perfect pay should increase perfects");
+}
+
+{
+  assert(bonusHitPeriod(0) === 0, "no every-N bonus at level 0");
+  assert(bonusHitPeriod(1) === 10, "level 1 every 10 hits");
+  assert(bonusHitPeriod(7) === 4, "high every-N floors at 4");
+  assert(bonusHitPayout(2) === 70, "payout scales with level");
+  assert(perfectPayFactor(4) === 2, "perfect pay +25% per level");
+  assert(starShareFactor(5) === 1, "max share is 100%");
+  assert(starShareFactor(0) === 0, "no share without the upgrade");
 }
 
 {

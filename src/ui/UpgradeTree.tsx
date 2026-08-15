@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { GameSnapshot } from "../game/Game.ts";
 import type { UpgradeId } from "../game/types.ts";
+import { UPGRADE_DEFS } from "../game/upgrades.ts";
 import {
   ICONS,
   NODE,
@@ -80,7 +81,7 @@ export function UpgradeTree({
     ]),
   ) as Record<TreeNodeId, ReturnType<typeof nodeProgress>>;
 
-  const [selected, setSelected] = useState<TreeNodeId>("warmup");
+  const [selected, setSelected] = useState<TreeNodeId>("bonusHits");
   const node = TREE_NODES.find((n) => n.id === selected)!;
   const prog = progress[selected];
   const pathOpen = parentsOwned(node, progress);
@@ -226,7 +227,11 @@ export function UpgradeTree({
             </span>
           </div>
           <div className="tree-blurb">
-            {!pathOpen ? "locked — buy the path first" : node.blurb}
+            {!pathOpen
+              ? "locked — buy the path first"
+              : selected in UPGRADE_DEFS
+                ? UPGRADE_DEFS[selected as UpgradeId].effect(prog.level)
+                : node.blurb}
           </div>
         </div>
         <button
