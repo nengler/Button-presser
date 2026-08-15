@@ -7,9 +7,12 @@ export type Puff = {
 };
 
 export type Chip = {
-  id: number;
+  id: string;
+  hit: number;
   pts: number;
+  label: string;
   color: string;
   x0: number;
   y0: number;
+  delay: number;
 };

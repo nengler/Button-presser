@@ -90,7 +90,39 @@ describe("Game", function () {
       streakBefore: period - 1,
       beatIndex: period - 1,
     }).points;
-    assert.equal(game.snapshot().lastResult?.points, base + bonusHitPayout(1));
+    const result = game.snapshot().lastResult;
+    assert.equal(result?.points, base + bonusHitPayout(1));
+    assert.equal(
+      result?.bonuses.some(function (bonus) {
+        return bonus.label === "EVERY" && bonus.points === bonusHitPayout(1);
+      }),
+      true,
+    );
+  });
+
+  it("lists extra-button pay as BTNS", function () {
+    const slow = EXTRA_BUTTONS[0];
+    const save = defaultSave();
+    save.unlockedPads = [slow.id];
+    save.upgrades.padPay = 2;
+    persistSave(save);
+    const game = new Game();
+    const origin = performance.now();
+    assert.equal(game.press(slow.id, origin), true);
+    const result = game.snapshot().lastResult;
+    assert.ok(result);
+    assert.equal(
+      result.bonuses.some(function (bonus) {
+        return bonus.label === "BTNS";
+      }),
+      true,
+    );
+    const paid =
+      result.basePoints +
+      result.bonuses.reduce(function (sum, bonus) {
+        return sum + bonus.points;
+      }, 0);
+    assert.equal(paid, result.points);
   });
 
   it("still scores the next beat after buying tempo mid-run", function () {

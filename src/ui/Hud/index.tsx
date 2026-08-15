@@ -1,12 +1,73 @@
 import { useState } from "react";
 import type { GameSnapshot } from "../../game/Game.ts";
+import type { PressResult } from "../../game/types.ts";
 import { buttonCenter } from "../../game/buttons.ts";
-import { COLORS } from "../../game/view.ts";
+import { COLORS, WIDTH } from "../../game/view.ts";
 import { useLerpedScore } from "../hooks/useLerpedScore.ts";
 import "./index.css";
 import GradePuff from "./GradePuff.tsx";
 import { Chip, Puff } from "./types.ts";
 import FlyChip from "./Chip.tsx";
+
+const CHIP_LINE = 8;
+const CHIP_DELAY = 70;
+
+function bonusTotal(result: PressResult): number {
+  return result.bonuses.reduce(function (sum, bonus) {
+    return sum + bonus.points;
+  }, 0);
+}
+
+function chipX(hitX: number): number {
+  if (hitX + 72 > WIDTH) return hitX - 56;
+  return hitX + 34;
+}
+
+function scoreChips(snap: GameSnapshot, result: PressResult | null, delta: number): Chip[] {
+  const x0 = chipX(snap.hitX);
+  const y0 = snap.hitY - 4;
+  if (!result || result.basePoints + bonusTotal(result) !== delta) {
+    return [
+      {
+        id: `${snap.hitNonce}:all`,
+        hit: snap.hitNonce,
+        pts: delta,
+        label: "",
+        color: COLORS.goldHot,
+        x0,
+        y0,
+        delay: 0,
+      },
+    ];
+  }
+  const chips: Chip[] = [];
+  if (result.basePoints > 0) {
+    chips.push({
+      id: `${snap.hitNonce}:base`,
+      hit: snap.hitNonce,
+      pts: result.basePoints,
+      label: "",
+      color: gradeColor(result.grade),
+      x0,
+      y0,
+      delay: 0,
+    });
+  }
+  result.bonuses.forEach(function (bonus, i) {
+    const line = chips.length;
+    chips.push({
+      id: `${snap.hitNonce}:b${i}`,
+      hit: snap.hitNonce,
+      pts: bonus.points,
+      label: bonus.label,
+      color: COLORS.goldHot,
+      x0,
+      y0: y0 + line * CHIP_LINE,
+      delay: line * CHIP_DELAY,
+    });
+  });
+  return chips;
+}
 
 function gradeColor(grade: string): string {
   switch (grade) {
@@ -77,21 +138,12 @@ export function Hud({ snap, onShop }: { snap: GameSnapshot; onShop: () => void }
       setChips(function (list) {
         if (
           list.some(function (c) {
-            return c.id === snap.hitNonce;
+            return c.hit === snap.hitNonce;
           })
         ) {
           return list;
         }
-        return [
-          ...list,
-          {
-            id: snap.hitNonce,
-            pts: delta,
-            color: result && result.points === delta ? gradeColor(result.grade) : COLORS.goldHot,
-            x0: snap.hitX - 8,
-            y0: snap.hitY - 4,
-          },
-        ];
+        return [...list, ...scoreChips(snap, result, delta)];
       });
     }
   } else if (total !== seenScore) {

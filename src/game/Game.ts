@@ -1,5 +1,5 @@
 import { defaultSave, loadSave, persistSave } from "./save.ts";
-import { scorePress } from "./timing.ts";
+import { addScore, multiplyScore, scorePress } from "./timing.ts";
 import type { Burst, GameSave, GameSnapshot, PressResult, UpgradeId } from "./types.ts";
 import {
   buttonById,
@@ -264,10 +264,10 @@ export class Game {
     if (result.grade === "miss") return result;
 
     if (args.extraButton && u.padPay > 0) {
-      result.points = Math.round(result.points * padPayFactor(u.padPay));
+      multiplyScore(result, padPayFactor(u.padPay), "BTNS");
     }
     if (args.fromStar && u.starPay > 0) {
-      result.points = Math.round(result.points * starPayFactor(u.starPay));
+      multiplyScore(result, starPayFactor(u.starPay), "TIP");
     }
 
     return result;
@@ -280,7 +280,7 @@ export class Game {
       this.hitCount += 1;
       const period = bonusHitPeriod(u.bonusHits);
       if (period > 0 && this.hitCount % period === 0) {
-        result.points += bonusHitPayout(u.bonusHits);
+        addScore(result, bonusHitPayout(u.bonusHits), "EVERY");
       }
     }
   }

@@ -83,6 +83,58 @@ describe("scorePress", function () {
     assert.equal(plain.grade, "great");
     assert.ok(boosted.points > plain.points);
   });
+
+  it("keeps base plus bonus lines equal to points", function () {
+    const hit = scorePress({
+      ...base,
+      errorMs: 0,
+      multiplierLevel: 3,
+      comboLevel: 2,
+      perfectLevel: 4,
+      streakBefore: 6,
+    });
+    const paid =
+      hit.basePoints +
+      hit.bonuses.reduce(function (sum, bonus) {
+        return sum + bonus.points;
+      }, 0);
+    assert.equal(paid, hit.points);
+    assert.ok(hit.basePoints > 0);
+    assert.ok(hit.basePoints < hit.points);
+  });
+
+  it("names scoring upgrades on bonus lines", function () {
+    const hit = scorePress({
+      ...base,
+      errorMs: 0,
+      multiplierLevel: 2,
+      comboLevel: 3,
+      perfectLevel: 2,
+      streakBefore: 4,
+    });
+    const labels = hit.bonuses.map(function (bonus) {
+      return bonus.label;
+    });
+    assert.deepEqual(labels, ["MULT", "COMBO", "PERF"]);
+  });
+
+  it("skips bonus lines when nothing extra pays", function () {
+    const hit = scorePress({ ...base, errorMs: 0 });
+    assert.deepEqual(hit.bonuses, []);
+    assert.equal(hit.basePoints, hit.points);
+  });
+
+  it("lists great pay as GREAT", function () {
+    const errorMs = windowMs(0) * 0.2;
+    const hit = scorePress({ ...base, errorMs, greatLevel: 4 });
+    assert.equal(hit.grade, "great");
+    assert.deepEqual(
+      hit.bonuses.map(function (bonus) {
+        return bonus.label;
+      }),
+      ["GREAT"],
+    );
+  });
 });
 
 describe("double and pair helpers", function () {

@@ -1,5 +1,5 @@
 import { type ButtonDef, MAIN_BUTTON } from "./buttons.ts";
-import { nearestBeatError, pairCompletes, withinDoubleGap } from "./timing.ts";
+import { nearestBeatError, pairCompletes, withinDoubleGap, zeroPress } from "./timing.ts";
 import type { ButtonView, GameSave, PressResult } from "./types.ts";
 import { doubleGapMs, intervalMs, starShareFactor, windowMs } from "./upgrades.ts";
 import type { Star } from "./Star.ts";
@@ -114,13 +114,12 @@ export class Button {
     this.used.add(beatIndex);
     this.noteMiss(false);
     this.syncPulse(now, upgrades);
-    return {
+    return zeroPress({
       errorMs: doubleGapMs(upgrades.twinGap),
-      points: 0,
       grade: "miss",
       streak: this.streak,
       beatIndex,
-    };
+    });
   }
 
   pendingReadyForStar(now: number, upgrades: GameSave["upgrades"]): boolean {
@@ -143,13 +142,12 @@ export class Button {
     this.streak = 0;
     this.lastSuccessBeat = -1;
     this.syncPulse(now, upgrades);
-    return {
+    return zeroPress({
       errorMs: window,
-      points: 0,
       grade: "miss",
       streak: 0,
       beatIndex: nextBeat,
-    };
+    });
   }
 
   /** Count a leftover beat toward this button's star cadence. True when the star should press. */
@@ -183,13 +181,12 @@ export class Button {
         ping: true,
         persist: false,
         payoffs: false,
-        result: {
+        result: zeroPress({
           errorMs,
-          points: 0,
           grade: "miss",
           streak: this.streak,
           beatIndex,
-        },
+        }),
       };
     }
 
@@ -257,13 +254,12 @@ export class Button {
         ping: true,
         persist: false,
         payoffs: false,
-        result: {
+        result: zeroPress({
           errorMs,
-          points: 0,
           grade: "miss",
           streak: this.streak,
           beatIndex: heldBeat >= 0 ? heldBeat : beatIndex,
-        },
+        }),
       };
     }
 
@@ -280,13 +276,12 @@ export class Button {
         ping: true,
         persist: false,
         payoffs: false,
-        result: {
+        result: zeroPress({
           errorMs,
-          points: 0,
           grade: "miss",
           streak: this.streak,
           beatIndex,
-        },
+        }),
       };
     }
 
@@ -299,13 +294,12 @@ export class Button {
       ping: true,
       persist: false,
       payoffs: false,
-      result: {
+      result: zeroPress({
         errorMs,
-        points: 0,
         grade: "set",
         streak: this.streak,
         beatIndex,
-      },
+      }),
     };
   }
 
@@ -336,6 +330,8 @@ export class Button {
     }
     this.lastSuccessBeat = result.beatIndex;
     result.points = 0;
+    result.basePoints = 0;
+    result.bonuses = [];
     result.grade = "set";
   }
 }
