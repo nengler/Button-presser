@@ -36,6 +36,7 @@ export class Game {
   private lastSnap: GameSnapshot | null = null;
   private buttonsList: Button[] = [];
   private starsList: Star[] = [];
+  private clock = 0;
 
   constructor() {
     this.rebuildButtons();
@@ -67,6 +68,7 @@ export class Game {
   }
 
   tick(now = performance.now()): void {
+    this.clock = now;
     if (!this.running) return;
     const upgrades = this.save.upgrades;
     for (const button of this.buttonsList) {
@@ -85,6 +87,7 @@ export class Game {
    * Returns false if the button is locked or that extra beat was already used.
    */
   press(id = MAIN_BUTTON.id, now = performance.now(), opts: { fromStar?: boolean } = {}): boolean {
+    this.clock = now;
     if (!this.running) this.start();
     const button = this.buttonsList.find(function (p) {
       return p.def.id === id;
@@ -113,7 +116,11 @@ export class Game {
     const cost = def.cost(level);
     if (this.save.score < cost) return false;
     this.save.score -= cost;
-    this.save.upgrades[id] = level + 1;
+    const nextLevel = level + 1;
+    this.save.upgrades[id] = nextLevel;
+    if (id === "tempo" && this.running) {
+      this.mainButton.retargetInterval(intervalMs(level), intervalMs(nextLevel), this.clock);
+    }
     persistSave(this.save);
     this.emit();
     return true;

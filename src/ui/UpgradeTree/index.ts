@@ -280,7 +280,7 @@ const EARLY_NODES: TreeNode[] = [
     y: 72,
     parents: ["focus"],
     title: "TEMPO",
-    blurb: "Slower beat, easier settle",
+    blurb: "More time between main beats",
   },
 ];
 

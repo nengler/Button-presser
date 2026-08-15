@@ -42,7 +42,7 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
   tempo: {
     id: "tempo",
     name: "Steady Tempo",
-    description: "Slightly lengthen the beat interval — easier to settle into.",
+    description: "Slow the main beat so there is more time between hits.",
     effect(level) {
       return `Main beat every ${intervalMs(Math.max(1, level))}ms`;
     },

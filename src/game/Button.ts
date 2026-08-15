@@ -55,6 +55,15 @@ export class Button {
     return this.isMain ? intervalMs(upgrades.tempo) : this.def.interval;
   }
 
+  /**
+   * Keep the current pulse phase when the main interval changes.
+   * Otherwise later clicks land on already-used beat indices and miss.
+   */
+  retargetInterval(oldInterval: number, newInterval: number, now: number): void {
+    if (!this.isMain || oldInterval === newInterval || oldInterval <= 0) return;
+    this.origin = now - ((now - this.origin) * newInterval) / oldInterval;
+  }
+
   nearest(now: number, upgrades: GameSave["upgrades"]): { errorMs: number; beatIndex: number } {
     return nearestBeatError(now, this.origin, this.interval(upgrades));
   }
