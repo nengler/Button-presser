@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { HEIGHT, WIDTH } from "./game/view.ts";
 import { Hud } from "./ui/Hud.tsx";
 import { Playfield } from "./ui/Playfield.tsx";
+import { Sky } from "./ui/Sky.tsx";
 import { UpgradeTree } from "./ui/UpgradeTree.tsx";
 import { useGame } from "./ui/useGame.ts";
 import { usePixelScale } from "./ui/usePixelScale.ts";
@@ -31,6 +32,7 @@ export function App() {
 
   return (
     <div className="page">
+      <Sky scale={scale} />
       <div className="frame" style={{ width: WIDTH * scale, height: HEIGHT * scale }}>
         <div className="stage" style={{ transform: `scale(${scale})` }}>
           <Playfield game={game} />
