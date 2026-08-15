@@ -30,12 +30,13 @@ type Speck = {
   max: number;
 };
 
-function clientPos(el: HTMLElement, clientX: number, clientY: number) {
-  const rect = el.getBoundingClientRect();
+/** Map a pointer's client (CSS) position onto the canvas bitmap, including CSS/transform scale. */
+function pointerToCanvas(canvas: HTMLCanvasElement, clientX: number, clientY: number) {
+  const rect = canvas.getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) return { x: -1, y: -1 };
   return {
-    x: ((clientX - rect.left) / rect.width) * WIDTH,
-    y: ((clientY - rect.top) / rect.height) * HEIGHT,
+    x: ((clientX - rect.left) / rect.width) * canvas.width,
+    y: ((clientY - rect.top) / rect.height) * canvas.height,
   };
 }
 
@@ -165,43 +166,67 @@ export function Playfield({ game }: { game: Game }) {
     };
 
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+
+    const padAt = (e: PointerEvent) => {
+      const { x, y } = pointerToCanvas(canvas, e.clientX, e.clientY);
+      return hitPad(gameRef.current.pads(), x, y);
+    };
+
+    const pressAt = (e: PointerEvent) => {
+      const id = padAt(e);
+      if (!id) return;
+      const g = gameRef.current;
+      if (!g.snapshot().running && id === MAIN_PAD.id) {
+        g.start();
+        return;
+      }
+      g.press(id);
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (!e.isPrimary) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      e.preventDefault();
+      canvas.setPointerCapture(e.pointerId);
+      pressAt(e);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!e.isPrimary) return;
+      if (e.pointerType === "mouse") {
+        canvas.style.cursor = padAt(e) ? "pointer" : "default";
+      }
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      if (!e.isPrimary) return;
+      e.preventDefault();
+      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+    };
+
+    const onPointerCancel = (e: PointerEvent) => {
+      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+      canvas.style.cursor = "default";
+    };
+
+    const pointerOpts: AddEventListenerOptions = { passive: false };
+    canvas.addEventListener("pointerdown", onPointerDown, pointerOpts);
+    canvas.addEventListener("pointermove", onPointerMove, pointerOpts);
+    canvas.addEventListener("pointerup", onPointerUp, pointerOpts);
+    canvas.addEventListener("pointercancel", onPointerCancel, pointerOpts);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      canvas.removeEventListener("pointerdown", onPointerDown, pointerOpts);
+      canvas.removeEventListener("pointermove", onPointerMove, pointerOpts);
+      canvas.removeEventListener("pointerup", onPointerUp, pointerOpts);
+      canvas.removeEventListener("pointercancel", onPointerCancel, pointerOpts);
+    };
   }, []);
 
-  const padAt = (el: HTMLElement, clientX: number, clientY: number) => {
-    const { x, y } = clientPos(el, clientX, clientY);
-    return hitPad(gameRef.current.pads(), x, y);
-  };
-
-  const pressAt = (el: HTMLElement, clientX: number, clientY: number) => {
-    const id = padAt(el, clientX, clientY);
-    if (!id) return;
-    const g = gameRef.current;
-    if (!g.snapshot().running && id === MAIN_PAD.id) {
-      g.start();
-      return;
-    }
-    g.press(id);
-  };
-
   return (
-    <div
-      className="playfield"
-      onPointerDown={(e) => {
-        if (e.button !== 0 && e.pointerType === "mouse") return;
-        e.preventDefault();
-        pressAt(e.currentTarget, e.clientX, e.clientY);
-      }}
-      onPointerMove={(e) => {
-        e.currentTarget.style.cursor = padAt(e.currentTarget, e.clientX, e.clientY)
-          ? "pointer"
-          : "default";
-      }}
-      onPointerLeave={(e) => {
-        e.currentTarget.style.cursor = "default";
-      }}
-    >
-      <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} />
+    <div className="playfield">
+      <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} style={{ touchAction: "none" }} />
     </div>
   );
 }

@@ -64,17 +64,18 @@ body,
 .playfield {
   position: absolute;
   inset: 0;
-  touch-action: none;
 }
 
 .playfield canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
+  touch-action: none;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
-  /* Paint only — iOS drops pointer events on <canvas>, so the playfield div handles taps. */
-  pointer-events: none;
 }
 
 .brand,
