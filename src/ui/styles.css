@@ -95,7 +95,8 @@ body,
 }
 
 .stats,
-.score-chip {
+.score-chip,
+.grade-puff {
   pointer-events: none;
 }
 
@@ -125,6 +126,7 @@ body,
 
 .stats .gold {
   color: var(--gold-hot);
+  animation-delay: 0s;
 }
 
 .stats .gold.pop {
@@ -133,13 +135,55 @@ body,
 
 .stats .sage {
   color: var(--sage);
+  animation-delay: 0.9s;
 }
 
-.score-chip {
+.stat {
+  display: inline-block;
+  animation: stat-idle 2.8s steps(2, end) infinite;
+}
+
+.stats span:nth-child(2) {
+  animation-delay: 0.45s;
+}
+
+.stat.nudge,
+.stat.pop {
+  animation: stat-nudge 220ms steps(2, end);
+}
+
+@keyframes stat-idle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(1px);
+  }
+}
+
+@keyframes stat-nudge {
+  0% {
+    transform: translate(0, 0);
+  }
+  40% {
+    transform: translate(1px, -1px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.score-chip,
+.grade-puff {
   position: absolute;
   z-index: 4;
   font-size: 9px;
   white-space: nowrap;
+}
+
+.grade-puff {
+  font-size: 8px;
 }
 
 .btn {

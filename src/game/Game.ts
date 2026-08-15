@@ -112,13 +112,12 @@ export class Game {
   press(id = MAIN_PAD.id, now = performance.now()): boolean {
     if (!this.running) return false;
     if (id === MAIN_PAD.id) {
-      this.pressMain(now);
       this.ping(id);
+      this.pressMain(now);
       return true;
     }
     if (!this.save.unlockedPads.includes(id)) return false;
     if (!this.pressExtra(id, now)) return false;
-    this.ping(id);
     return true;
   }
 
@@ -275,6 +274,7 @@ export class Game {
     const { errorMs, beatIndex } = nearestBeatError(now, clock.origin, pad.interval);
     if (clock.used.has(beatIndex)) return false;
     clock.used.add(beatIndex);
+    this.ping(id);
     const result = scorePress({
       errorMs,
       focusLevel: this.save.upgrades.focus,
@@ -284,11 +284,12 @@ export class Game {
       beatIndex,
     });
     clock.streak = result.streak;
+    this.lastResult = result;
     if (result.points > 0) {
       this.save.score += result.points;
       persistSave(this.save);
-      this.emit();
     }
+    this.emit();
     return true;
   }
 
