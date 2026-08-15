@@ -4,7 +4,6 @@ import { MAIN_PAD, minionsOnStation, padById } from "../game/pads.ts";
 import { COLORS, HEIGHT, WIDTH } from "../game/view.ts";
 import { fadeOnInk, fillDisc, fillRing, fillSweepRing } from "./pixelDraw.ts";
 import { hitPad, pointerToCanvas } from "./pointer.ts";
-import { drawSky } from "./sky.ts";
 
 const MOSS_IN = 32;
 const MOSS_OUT = 34;
@@ -75,7 +74,7 @@ export function Playfield({ game }: { game: Game }) {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d", { alpha: false });
+    const ctx = canvas?.getContext("2d", { alpha: true });
     if (!canvas || !ctx) return;
     ctx.imageSmoothingEnabled = false;
 
@@ -104,7 +103,7 @@ export function Playfield({ game }: { game: Game }) {
         if (p.life <= 0) specks.splice(i, 1);
       }
 
-      drawSky(ctx, elapsed);
+      ctx.clearRect(0, 0, WIDTH, HEIGHT);
 
       const pads = g.pads(now);
       for (const pad of pads) {

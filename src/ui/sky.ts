@@ -1,4 +1,4 @@
-import { PALETTE, HEIGHT, WIDTH } from "../game/view.ts";
+import { HEIGHT, PALETTE, WIDTH } from "../game/view.ts";
 
 const BAYER = [
   [0, 8, 2, 10],
@@ -15,7 +15,7 @@ function rgb(hex: string): [number, number, number] {
 const RGB: readonly [number, number, number][] = PALETTE.map(rgb);
 
 const LAST = RGB.length - 1;
-const TOP = HEIGHT * 0.42;
+const STAR_BAND = HEIGHT * 0.42;
 
 let pixels: ImageData | undefined;
 
@@ -23,9 +23,9 @@ function hash(x: number, y: number): number {
   return ((x * 73856093) ^ (y * 19349663)) >>> 0;
 }
 
-function warmth(x: number, y: number, t: number): number {
-  const u = x / WIDTH;
-  const v = y / HEIGHT;
+function warmth(wx: number, wy: number, t: number): number {
+  const u = wx / WIDTH;
+  const v = wy / HEIGHT;
   const dx = u - 0.5;
   return (
     v * 0.52 +
@@ -37,22 +37,36 @@ function warmth(x: number, y: number, t: number): number {
   );
 }
 
-function starlit(x: number, y: number, t: number): boolean {
-  if (y >= TOP) return false;
-  const h = hash(x, y);
+function starlit(wx: number, wy: number, t: number): boolean {
+  if (wy >= STAR_BAND) return false;
+  const h = hash(wx, wy);
   if (h % 1601 !== 0) return false;
   return 0.45 + 0.55 * Math.sin(t * 1.4 + (h % 97)) > 0.38;
 }
 
-/** Dusk bands + Bayer dither + slow drift. Palette-locked. */
-export function drawSky(ctx: CanvasRenderingContext2D, elapsed: number): void {
-  if (!pixels) pixels = new ImageData(WIDTH, HEIGHT);
+/**
+ * Dusk bands + Bayer dither. `w`/`h` are sky pixels; (0,0) of the 320×180
+ * stage is centered so the playfield is a window on the same sky.
+ */
+export function drawSky(
+  ctx: CanvasRenderingContext2D,
+  elapsed: number,
+  w: number,
+  h: number,
+): void {
+  if (!pixels || pixels.width !== w || pixels.height !== h) {
+    pixels = new ImageData(w, h);
+  }
   const data = pixels.data;
+  const ox = Math.floor((w - WIDTH) / 2);
+  const oy = Math.floor((h - HEIGHT) / 2);
   const t = elapsed;
   let i = 0;
-  for (let y = 0; y < HEIGHT; y++) {
-    for (let x = 0; x < WIDTH; x++) {
-      if (starlit(x, y, t)) {
+  for (let y = 0; y < h; y++) {
+    const wy = y - oy;
+    for (let x = 0; x < w; x++) {
+      const wx = x - ox;
+      if (starlit(wx, wy, t)) {
         data[i] = RGB[LAST]![0];
         data[i + 1] = RGB[LAST]![1];
         data[i + 2] = RGB[LAST]![2];
@@ -60,7 +74,7 @@ export function drawSky(ctx: CanvasRenderingContext2D, elapsed: number): void {
         i += 4;
         continue;
       }
-      const n = Math.max(0, Math.min(1, warmth(x, y, t)));
+      const n = Math.max(0, Math.min(1, warmth(wx, wy, t)));
       const scaled = n * LAST;
       const lo = Math.min(LAST - 1, Math.floor(scaled));
       const pick = scaled - lo > BAYER[y & 3]![x & 3]! / 16 ? lo + 1 : lo;
