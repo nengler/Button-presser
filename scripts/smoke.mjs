@@ -3,7 +3,12 @@
  * Prefer: npm run build && node scripts/smoke.mjs
  */
 import { Game } from "../src/game/Game.ts";
-import { nearestBeatError, pairCompletes, scorePress, withinDoubleGap } from "../src/game/timing.ts";
+import {
+  nearestBeatError,
+  pairCompletes,
+  scorePress,
+  withinDoubleGap,
+} from "../src/game/timing.ts";
 import {
   bonusHitPeriod,
   bonusHitPayout,
@@ -13,9 +18,9 @@ import {
   starShareFactor,
   windowMs,
 } from "../src/game/upgrades.ts";
-import { MAIN_PAD } from "../src/game/pads.ts";
+import { MAIN_BUTTON } from "../src/game/buttons.ts";
 import { HEIGHT, WIDTH } from "../src/game/view.ts";
-import { HIT_R, hitPad, pointerToCanvas } from "../src/ui/pointer.ts";
+import { HIT_R, hitButton, pointerToCanvas } from "../src/ui/pointer.ts";
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -91,18 +96,33 @@ const interval = 1000;
       return { left: 100, top: 50, width: WIDTH * scale, height: HEIGHT * scale };
     },
   };
-  const pads = [{ id: MAIN_PAD.id }];
-  const onPad = pointerToCanvas(
+  const buttons = [{ id: MAIN_BUTTON.id }];
+  const onButton = pointerToCanvas(
     canvas,
-    100 + (MAIN_PAD.x / WIDTH) * WIDTH * scale,
-    50 + (MAIN_PAD.y / HEIGHT) * HEIGHT * scale,
+    100 + (MAIN_BUTTON.x / WIDTH) * WIDTH * scale,
+    50 + (MAIN_BUTTON.y / HEIGHT) * HEIGHT * scale,
   );
-  assert(onPad !== null, "scaled pad click should map onto the bitmap");
-  assert(Math.abs(onPad.x - MAIN_PAD.x) < 0.001, `expected x ${MAIN_PAD.x}, got ${onPad.x}`);
-  assert(Math.abs(onPad.y - MAIN_PAD.y) < 0.001, `expected y ${MAIN_PAD.y}, got ${onPad.y}`);
-  assert(hitPad(pads, onPad.x, onPad.y) === MAIN_PAD.id, "center of main pad should hit");
-  assert(hitPad(pads, MAIN_PAD.x + HIT_R, MAIN_PAD.y) === MAIN_PAD.id, "edge of hit radius should hit");
-  assert(hitPad(pads, MAIN_PAD.x + HIT_R + 1, MAIN_PAD.y) === null, "outside hit radius should miss");
+  assert(onButton !== null, "scaled button click should map onto the bitmap");
+  assert(
+    Math.abs(onButton.x - MAIN_BUTTON.x) < 0.001,
+    `expected x ${MAIN_BUTTON.x}, got ${onButton.x}`,
+  );
+  assert(
+    Math.abs(onButton.y - MAIN_BUTTON.y) < 0.001,
+    `expected y ${MAIN_BUTTON.y}, got ${onButton.y}`,
+  );
+  assert(
+    hitButton(buttons, onButton.x, onButton.y) === MAIN_BUTTON.id,
+    "center of main button should hit",
+  );
+  assert(
+    hitButton(buttons, MAIN_BUTTON.x + HIT_R, MAIN_BUTTON.y) === MAIN_BUTTON.id,
+    "edge of hit radius should hit",
+  );
+  assert(
+    hitButton(buttons, MAIN_BUTTON.x + HIT_R + 1, MAIN_BUTTON.y) === null,
+    "outside hit radius should miss",
+  );
   assert(pointerToCanvas(canvas, 99, 50) === null, "letterbox left of canvas should miss");
 }
 
@@ -165,15 +185,18 @@ const interval = 1000;
   };
 
   const onBeat = new Game();
-  assert(onBeat.press(MAIN_PAD.id, 8000), "first on-beat press should start and score");
+  assert(onBeat.press(MAIN_BUTTON.id, 8000), "first on-beat press should start and score");
   const hit = onBeat.snapshot();
   assert(hit.running, "first press should start the session");
   assert(hit.lastResult?.grade === "perfect", `expected perfect, got ${hit.lastResult?.grade}`);
   assert(hit.score > 0, "first press should add points");
 
   const late = new Game();
-  late.press(MAIN_PAD.id, 8000 + windowMs(0) + 1);
-  assert(late.snapshot().lastResult?.grade === "miss", "first press still misses when far from the beat");
+  late.press(MAIN_BUTTON.id, 8000 + windowMs(0) + 1);
+  assert(
+    late.snapshot().lastResult?.grade === "miss",
+    "first press still misses when far from the beat",
+  );
 }
 
 console.log("smoke ok");

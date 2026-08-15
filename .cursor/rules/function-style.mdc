@@ -1,0 +1,37 @@
+---
+description: Prefer function declarations over arrow functions
+globs: **/*.{ts,tsx,js,jsx,mjs}
+alwaysApply: true
+---
+
+# Function style
+
+Prefer regular `function` declarations and expressions over arrow functions.
+
+```ts
+// BAD
+const pressMain = () => {
+  game.press(MAIN_PAD.id);
+};
+
+export const useGame = () => {
+  return { pressMain };
+};
+
+pads.find((p) => p.id === id);
+
+// GOOD
+function pressMain() {
+  game.press(MAIN_PAD.id);
+}
+
+export function useGame() {
+  return { pressMain };
+}
+
+pads.find(function (p) {
+  return p.id === id;
+});
+```
+
+Keep `=>` only in type positions (`() => void`) and in APIs that require an arrow for lexical `this`.

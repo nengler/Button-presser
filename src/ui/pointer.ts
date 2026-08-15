@@ -1,4 +1,4 @@
-import { padById } from "../game/pads.ts";
+import { buttonById } from "../game/buttons.ts";
 
 export const HIT_R = 43;
 
@@ -29,14 +29,14 @@ export function pointerToCanvas(
   };
 }
 
-export function hitPad(pads: { id: string }[], sx: number, sy: number): string | null {
+export function hitButton(buttons: { id: string }[], sx: number, sy: number): string | null {
   let best: { id: string; d2: number } | null = null;
   const r2 = HIT_R * HIT_R;
-  for (const pad of pads) {
-    const def = padById(pad.id);
+  for (const button of buttons) {
+    const def = buttonById(button.id);
     const d2 = (sx - def.x) ** 2 + (sy - def.y) ** 2;
     if (d2 > r2) continue;
-    if (!best || d2 < best.d2) best = { id: pad.id, d2 };
+    if (!best || d2 < best.d2) best = { id: button.id, d2 };
   }
   return best?.id ?? null;
 }

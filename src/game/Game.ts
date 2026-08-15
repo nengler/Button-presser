@@ -1,20 +1,16 @@
 import { defaultSave, loadSave, persistSave } from "./save.ts";
+import { scorePress } from "./timing.ts";
+import type { Burst, GameSave, GameSnapshot, PressResult, UpgradeId } from "./types.ts";
 import {
-  nearestBeatError,
-  pairCompletes,
-  scorePress,
-  withinDoubleGap,
-} from "./timing.ts";
-import type { GameSave, PressResult, UpgradeId } from "./types.ts";
-import {
-  DOUBLE_GAP_MS,
-  MAIN_PAD,
+  MAIN_BUTTON,
   STAR_COST,
   STAR_MAX,
-  extraPadById,
-  padById,
-  starsOnStation,
-} from "./pads.ts";
+  buttonById,
+  extraButtonById,
+  starsOnButton,
+} from "./buttons.ts";
+import { Button, type HitWorld } from "./Button.ts";
+import { Star } from "./Star.ts";
 import {
   UPGRADE_DEFS,
   bonusHitPayout,
@@ -23,75 +19,46 @@ import {
   padPayFactor,
   recoveryFactor,
   shieldCharges,
-  starAimErrorMs,
-  starAttemptEvery,
   starShareFactor,
-  windowMs,
 } from "./upgrades.ts";
 
-const STAR_HIT_SLOP_MS = 20;
+export type { Burst, ButtonView, GameSnapshot } from "./types.ts";
 
-type ExtraClock = {
-  origin: number;
-  used: Set<number>;
-  streak: number;
-  starBeat: number;
-  skip: number;
-  pendingTapAt: number | null;
-  pendingBeat: number;
-  pendingErrorMs: number;
-  lastSuccessBeat: number;
-};
-
-export type Burst = { nonce: number; x: number; y: number };
-export type PadView = { id: string; phase: number; mark: 0 | 1 | 2 };
-
-export type GameSnapshot = {
-  score: number;
-  streak: number;
-  bestStreak: number;
-  interval: number;
-  phase: number;
-  lastResult: PressResult | null;
-  upgrades: GameSave["upgrades"];
-  running: boolean;
-  stars: number;
-  unlockedPads: string[];
-  hitNonce: number;
-  hitX: number;
-  hitY: number;
-};
-
+/** Session store: save, score, and the list of buttons/stars. Buttons and stars tick themselves. */
 export class Game {
-  /** Last pad hit — playfield reads this from its rAF loop. */
   burst: Burst = { nonce: 0, x: 0, y: 0 };
 
   private save: GameSave = loadSave();
-  private origin = 0;
-  private streak = 0;
   private lastResult: PressResult | null = null;
-  private usedBeats = new Set<number>();
-  private starBeatMain = -1;
-  private starSkipMain = 0;
-  private extra = new Map<string, ExtraClock>();
   private running = false;
   private hitCount = 0;
   private shieldsLeft = 0;
   private clutchArmed = false;
-  private listeners = new Set<(snap: GameSnapshot) => void>();
+  private listeners = new Set<() => void>();
+  private lastSnap: GameSnapshot | null = null;
+  private buttonsList: Button[] = [];
+  private starsList: Star[] = [];
 
-  subscribe(listener: (snap: GameSnapshot) => void): () => void {
-    this.listeners.add(listener);
-    listener(this.snapshot());
-    return () => this.listeners.delete(listener);
+  constructor() {
+    this.rebuildButtons();
+  }
+
+  subscribe(onStoreChange: () => void): () => void {
+    this.listeners.add(onStoreChange);
+    const listeners = this.listeners;
+    return function () {
+      listeners.delete(onStoreChange);
+    };
+  }
+
+  getSnapshot(): GameSnapshot {
+    return this.lastSnap ?? (this.lastSnap = this.snapshot());
   }
 
   start(): void {
     if (this.running) return;
     this.running = true;
-    // Keep origin at 0 so the first hit is judged against the idle ring sweep.
-    this.streak = 0;
-    this.usedBeats.clear();
+    this.mainButton.resetSession();
     this.lastResult = null;
     this.shieldsLeft = shieldCharges(this.save.upgrades.shield);
     this.clutchArmed = false;
@@ -103,86 +70,43 @@ export class Game {
     this.emit();
   }
 
-  /** Drive star auto-hits. Call once per animation frame. */
   tick(now = performance.now()): void {
     if (!this.running) return;
-    this.expireDoubles(now);
-    if (this.save.stars <= 0) return;
-    const stations = this.stationIds();
-    const n = stations.length;
-    const period = starAttemptEvery(this.save.upgrades.starRate);
-    const aim = starAimErrorMs(this.save.upgrades.starAim);
-    for (let i = 0; i < n; i++) {
-      const id = stations[i]!;
-      if (starsOnStation(this.save.stars, i, n) === 0) continue;
-      const pad = padById(id);
-      const { origin, interval } = this.timeline(id, now);
-      const { errorMs, beatIndex } = nearestBeatError(now, origin, interval);
-
-      if (pad.kind === "double") {
-        const clock = this.ensureExtra(id, now);
-        if (
-          clock.pendingTapAt !== null &&
-          now - clock.pendingTapAt >= 70 &&
-          now - clock.pendingTapAt <= DOUBLE_GAP_MS
-        ) {
-          this.press(id, now, { fromStar: true });
-          continue;
-        }
-      }
-
-      if (Math.abs(errorMs - aim) > STAR_HIT_SLOP_MS) continue;
-
-      if (id === MAIN_PAD.id) {
-        if (this.starBeatMain === beatIndex || !this.canPress(now)) continue;
-        this.starSkipMain += 1;
-        if (this.starSkipMain < period) continue;
-        this.starSkipMain = 0;
-        this.starBeatMain = beatIndex;
-        this.press(id, now, { fromStar: true });
-        continue;
-      }
-
-      const clock = this.ensureExtra(id, now);
-      if (clock.starBeat === beatIndex || clock.used.has(beatIndex)) continue;
-      if (clock.pendingTapAt !== null) continue;
-      clock.skip += 1;
-      if (clock.skip < period) continue;
-      clock.skip = 0;
-      clock.starBeat = beatIndex;
-      this.press(id, now, { fromStar: true });
+    const world = this.hitWorld();
+    for (const button of this.buttonsList) {
+      const expired = button.expirePending(now, world);
+      if (!expired) continue;
+      this.ping(button.def.id);
+      this.lastResult = expired;
+      this.emit();
     }
+    for (const star of this.starsList) star.tick(now, this);
   }
 
   /**
-   * Hit a pad. The first hit starts the session and still scores.
-   * Main pad updates HUD streak/grade; extra pads only add score.
-   * Returns false if the pad is locked or that extra beat was already used.
+   * Hit a button. The first hit starts the session and still scores.
+   * Returns false if the button is locked or that extra beat was already used.
    */
-  press(
-    id = MAIN_PAD.id,
-    now = performance.now(),
-    opts: { fromStar?: boolean } = {},
-  ): boolean {
+  press(id = MAIN_BUTTON.id, now = performance.now(), opts: { fromStar?: boolean } = {}): boolean {
     if (!this.running) this.start();
-    if (id === MAIN_PAD.id) {
-      this.ping(id);
-      this.pressMain(now, opts.fromStar === true);
-      return true;
-    }
-    if (!this.save.unlockedPads.includes(id)) return false;
-    if (!this.pressExtra(id, now, opts.fromStar === true)) return false;
+    const button = this.buttonsList.find(function (p) {
+      return p.def.id === id;
+    });
+    if (!button) return false;
+    const fromStar = opts.fromStar === true;
+    const attempt = button.press({ now, fromStar, world: this.hitWorld() });
+    if (!attempt.ok) return false;
+    if (attempt.payoffs) this.applyPayoffs(attempt.result, fromStar);
+    if (attempt.ping) this.ping(id);
+    this.lastResult = attempt.result;
+    if (attempt.result.points > 0) this.save.score += attempt.result.points;
+    if (attempt.persist) persistSave(this.save);
+    this.emit();
     return true;
   }
 
-  canPress(now = performance.now()): boolean {
-    if (!this.running) return false;
-    const { beatIndex } = nearestBeatError(
-      now,
-      this.origin,
-      intervalMs(this.save.upgrades.tempo),
-    );
-    return !this.usedBeats.has(beatIndex);
+  get upgrades(): GameSave["upgrades"] {
+    return this.save.upgrades;
   }
 
   buyUpgrade(id: UpgradeId): boolean {
@@ -203,18 +127,20 @@ export class Game {
     if (this.save.score < STAR_COST) return false;
     this.save.score -= STAR_COST;
     this.save.stars += 1;
+    this.parkStars();
     persistSave(this.save);
     this.emit();
     return true;
   }
 
-  unlockPad(id: string): boolean {
+  unlockButton(id: string): boolean {
     if (this.save.unlockedPads.includes(id)) return false;
-    const pad = extraPadById(id);
-    if (!pad || this.save.score < pad.cost) return false;
-    this.save.score -= pad.cost;
+    const def = extraButtonById(id);
+    if (!def || this.save.score < def.cost) return false;
+    this.save.score -= def.cost;
     this.save.unlockedPads = [...this.save.unlockedPads, id];
-    this.ensureExtra(id, performance.now());
+    this.buttonsList.push(new Button({ def, origin: performance.now() }));
+    this.parkStars();
     persistSave(this.save);
     this.emit();
     return true;
@@ -222,30 +148,21 @@ export class Game {
 
   resetProgress(): void {
     this.save = defaultSave();
-    this.streak = 0;
     this.lastResult = null;
-    this.usedBeats.clear();
-    this.starBeatMain = -1;
-    this.starSkipMain = 0;
-    this.extra.clear();
     this.hitCount = 0;
     this.shieldsLeft = 0;
     this.clutchArmed = false;
     this.burst = { nonce: 0, x: 0, y: 0 };
+    this.rebuildButtons();
     persistSave(this.save);
     this.emit();
   }
 
-  pads(now = performance.now()): PadView[] {
-    return this.stationIds().map((id) => {
-      let mark: 0 | 1 | 2 = 0;
-      if (id !== MAIN_PAD.id) {
-        const clock = this.extra.get(id);
-        const pad = padById(id);
-        if (clock && pad.kind === "double" && clock.pendingTapAt !== null) mark = 2;
-        else if (clock && pad.kind === "pair" && clock.lastSuccessBeat >= 0) mark = 1;
-      }
-      return { id, phase: this.phaseOf(id, now), mark };
+  buttons(now = performance.now()) {
+    const running = this.running;
+    const upgrades = this.save.upgrades;
+    return this.buttonsList.map(function (button) {
+      return button.view(now, running, upgrades);
     });
   }
 
@@ -256,12 +173,12 @@ export class Game {
   snapshot(): GameSnapshot {
     const interval = intervalMs(this.save.upgrades.tempo);
     const now = performance.now();
+    const main = this.mainButton;
     return {
       score: this.save.score,
-      streak: this.streak,
-      bestStreak: this.save.bestStreak,
+      streak: main.streak,
       interval,
-      phase: this.running ? ((now - this.origin) % interval) / interval : 0,
+      phase: this.running ? ((now - main.origin) % interval) / interval : 0,
       lastResult: this.lastResult,
       upgrades: { ...this.save.upgrades },
       running: this.running,
@@ -273,260 +190,77 @@ export class Game {
     };
   }
 
-  private stationIds(): string[] {
-    return [MAIN_PAD.id, ...this.save.unlockedPads];
+  private get mainButton(): Button {
+    return this.buttonsList[0]!;
   }
 
-  private phaseOf(id: string, now: number): number {
-    const { origin, interval } = this.timeline(id, now);
-    if (!this.running) return (now / interval) % 1;
-    return ((now - origin) % interval) / interval;
-  }
-
-  private timeline(id: string, now: number): { origin: number; interval: number } {
-    if (id === MAIN_PAD.id) {
-      return { origin: this.origin, interval: intervalMs(this.save.upgrades.tempo) };
+  private rebuildButtons(): void {
+    this.buttonsList = [new Button({ def: MAIN_BUTTON, origin: 0 })];
+    const now = performance.now();
+    for (const id of this.save.unlockedPads) {
+      this.buttonsList.push(new Button({ def: buttonById(id), origin: now }));
     }
-    return { origin: this.ensureExtra(id, now).origin, interval: padById(id).interval };
+    this.parkStars();
   }
 
-  private ensureExtra(id: string, now: number): ExtraClock {
-    let clock = this.extra.get(id);
-    if (!clock) {
-      clock = {
-        origin: now,
-        used: new Set(),
-        streak: 0,
-        starBeat: -1,
-        skip: 0,
-        pendingTapAt: null,
-        pendingBeat: -1,
-        pendingErrorMs: 0,
-        lastSuccessBeat: -1,
-      };
-      this.extra.set(id, clock);
-    }
-    return clock;
-  }
-
-  private expireDoubles(now: number): void {
-    for (const [id, clock] of this.extra) {
-      if (clock.pendingTapAt === null) continue;
-      if (now - clock.pendingTapAt <= DOUBLE_GAP_MS) continue;
-      const beatIndex = clock.pendingBeat;
-      clock.pendingTapAt = null;
-      clock.pendingBeat = -1;
-      clock.used.add(beatIndex);
-      clock.streak = this.protectStreak(clock.streak, false);
-      this.lastResult = {
-        errorMs: DOUBLE_GAP_MS,
-        points: 0,
-        grade: "miss",
-        streak: clock.streak,
-        beatIndex,
-      };
-      this.ping(id);
-      this.emit();
-    }
-  }
-
-  private pressMain(now: number, fromStar: boolean): void {
-    const interval = intervalMs(this.save.upgrades.tempo);
-    const { errorMs, beatIndex } = nearestBeatError(now, this.origin, interval);
-
-    if (this.usedBeats.has(beatIndex)) {
-      this.streak = this.protectStreak(this.streak, fromStar);
-      this.lastResult = {
-        errorMs,
-        points: 0,
-        grade: "miss",
-        streak: this.streak,
-        beatIndex,
-      };
-      this.emit();
-      return;
-    }
-
-    this.usedBeats.add(beatIndex);
-    if (this.usedBeats.size > 64) {
-      const min = beatIndex - 32;
-      for (const b of [...this.usedBeats]) {
-        if (b < min) this.usedBeats.delete(b);
+  /** Sprinkle hired stars across buttons the same way the playfield does. */
+  private parkStars(): void {
+    for (const button of this.buttonsList) button.stars = [];
+    this.starsList = [];
+    const n = this.buttonsList.length;
+    const count = this.save.stars;
+    for (let i = 0; i < n; i++) {
+      const button = this.buttonsList[i]!;
+      const here = starsOnButton(count, i, n);
+      for (let s = 0; s < here; s++) {
+        const star = new Star(button);
+        button.stars.push(star);
+        this.starsList.push(star);
       }
     }
-
-    const result = this.scoreHit(errorMs, this.streak, beatIndex, fromStar, false);
-    this.applyPayoffs(result, fromStar);
-    this.streak = result.streak;
-    if (result.streak > this.save.bestStreak) this.save.bestStreak = result.streak;
-    this.save.score += result.points;
-    this.lastResult = result;
-    persistSave(this.save);
-    this.emit();
   }
 
-  private pressExtra(id: string, now: number, fromStar: boolean): boolean {
-    const pad = padById(id);
-    const clock = this.ensureExtra(id, now);
-    const { errorMs, beatIndex } = nearestBeatError(now, clock.origin, pad.interval);
-
-    if (pad.kind === "double") {
-      return this.pressDouble(id, clock, errorMs, beatIndex, now, fromStar);
-    }
-
-    if (clock.used.has(beatIndex)) return false;
-    clock.used.add(beatIndex);
-    this.trimUsed(clock.used, beatIndex);
-    this.ping(id);
-
-    const result = this.scoreHit(errorMs, clock.streak, beatIndex, fromStar, true);
-    if (pad.kind === "pair") {
-      this.applyPair(clock, result);
-    } else {
-      clock.streak = result.streak;
-    }
-    this.applyPayoffs(result, fromStar);
-    this.lastResult = result;
-    if (result.points > 0) {
-      this.save.score += result.points;
-      persistSave(this.save);
-    }
-    this.emit();
-    return true;
-  }
-
-  private pressDouble(
-    id: string,
-    clock: ExtraClock,
-    errorMs: number,
-    beatIndex: number,
-    now: number,
-    fromStar: boolean,
-  ): boolean {
-    if (clock.pendingTapAt !== null) {
-      const heldBeat = clock.pendingBeat;
-      const heldError = clock.pendingErrorMs;
-      if (withinDoubleGap(clock.pendingTapAt, now, DOUBLE_GAP_MS)) {
-        clock.pendingTapAt = null;
-        clock.pendingBeat = -1;
-        clock.used.add(heldBeat);
-        this.trimUsed(clock.used, heldBeat);
-        this.ping(id);
-        const result = this.scoreHit(heldError, clock.streak, heldBeat, fromStar, true);
-        this.applyPayoffs(result, fromStar);
-        clock.streak = result.streak;
-        this.lastResult = result;
-        if (result.points > 0) {
-          this.save.score += result.points;
-          persistSave(this.save);
-        }
-        this.emit();
-        return true;
-      }
-      clock.pendingTapAt = null;
-      clock.pendingBeat = -1;
-      clock.used.add(heldBeat >= 0 ? heldBeat : beatIndex);
-      clock.streak = this.protectStreak(clock.streak, fromStar);
-      this.lastResult = {
-        errorMs,
-        points: 0,
-        grade: "miss",
-        streak: clock.streak,
-        beatIndex: heldBeat >= 0 ? heldBeat : beatIndex,
-      };
-      this.ping(id);
-      this.emit();
-      return true;
-    }
-
-    if (clock.used.has(beatIndex)) return false;
-
-    const share = fromStar ? starShareFactor(this.save.upgrades.starSkill) : 1;
-    const focus = Math.round(this.save.upgrades.focus * share);
-    if (Math.abs(errorMs) >= windowMs(focus)) {
-      clock.used.add(beatIndex);
-      this.trimUsed(clock.used, beatIndex);
-      clock.streak = this.protectStreak(clock.streak, fromStar);
-      this.lastResult = {
-        errorMs,
-        points: 0,
-        grade: "miss",
-        streak: clock.streak,
-        beatIndex,
-      };
-      this.ping(id);
-      this.emit();
-      return true;
-    }
-
-    clock.pendingTapAt = now;
-    clock.pendingBeat = beatIndex;
-    clock.pendingErrorMs = errorMs;
-    this.lastResult = {
-      errorMs,
-      points: 0,
-      grade: "set",
-      streak: clock.streak,
-      beatIndex,
+  private hitWorld(): HitWorld {
+    return {
+      upgrades: this.save.upgrades,
+      evaluateHit: this.evaluateHit.bind(this),
+      protectStreak: this.protectStreak.bind(this),
     };
-    this.ping(id);
-    this.emit();
-    return true;
   }
 
-  private applyPair(clock: ExtraClock, result: PressResult): void {
-    if (result.grade === "miss") {
-      clock.streak = result.streak;
-      clock.lastSuccessBeat = -1;
-      return;
-    }
-    if (pairCompletes(clock.lastSuccessBeat, result.beatIndex)) {
-      clock.streak = result.streak;
-      clock.lastSuccessBeat = -1;
-      return;
-    }
-    clock.lastSuccessBeat = result.beatIndex;
-    clock.streak = result.streak;
-    result.points = 0;
-    result.grade = "set";
-  }
-
-  private scoreHit(
-    errorMs: number,
-    streakBefore: number,
-    beatIndex: number,
-    fromStar: boolean,
-    extraPad: boolean,
-  ): PressResult {
+  private evaluateHit(args: {
+    errorMs: number;
+    streakBefore: number;
+    beatIndex: number;
+    fromStar: boolean;
+    extraButton: boolean;
+  }): PressResult {
     const u = this.save.upgrades;
-    const share = fromStar ? starShareFactor(u.starSkill) : 1;
+    const share = args.fromStar ? starShareFactor(u.starSkill) : 1;
     const result = scorePress({
-      errorMs,
+      errorMs: args.errorMs,
       focusLevel: Math.round(u.focus * share),
       multiplierLevel: Math.round(u.multiplier * share),
       comboLevel: Math.round(u.combo * share),
       perfectLevel: Math.round(u.perfectPay * share),
-      streakBefore: fromStar ? 0 : streakBefore,
-      beatIndex,
+      streakBefore: args.fromStar ? 0 : args.streakBefore,
+      beatIndex: args.beatIndex,
     });
 
     if (result.grade === "miss") {
-      result.streak = this.protectStreak(fromStar ? 0 : streakBefore, fromStar);
+      result.streak = this.protectStreak(args.fromStar ? 0 : args.streakBefore, args.fromStar);
       return result;
     }
 
-    if (extraPad && u.padPay > 0) {
+    if (args.extraButton && u.padPay > 0) {
       result.points = Math.round(result.points * padPayFactor(u.padPay));
     }
 
     return result;
   }
 
-  /** Clutch and every-N bonuses only after a hit actually pays. */
   private applyPayoffs(result: PressResult, fromStar: boolean): void {
-    if (result.grade === "miss" || result.grade === "set" || result.points <= 0) {
-      return;
-    }
+    if (result.grade === "miss" || result.grade === "set" || result.points <= 0) return;
     const u = this.save.upgrades;
     if (!fromStar && this.clutchArmed && u.recovery > 0) {
       result.points = Math.round(result.points * recoveryFactor(u.recovery));
@@ -541,7 +275,6 @@ export class Game {
     }
   }
 
-  /** Keep streak on a miss if Shield still has a charge. */
   private protectStreak(streakBefore: number, fromStar: boolean): number {
     if (fromStar) return 0;
     if (this.shieldsLeft > 0) {
@@ -553,21 +286,13 @@ export class Game {
     return 0;
   }
 
-  private trimUsed(used: Set<number>, beatIndex: number): void {
-    if (used.size <= 64) return;
-    const min = beatIndex - 32;
-    for (const b of [...used]) {
-      if (b < min) used.delete(b);
-    }
-  }
-
   private ping(id: string): void {
-    const { x, y } = padById(id);
+    const { x, y } = buttonById(id);
     this.burst = { nonce: this.burst.nonce + 1, x, y };
   }
 
   private emit(): void {
-    const snap = this.snapshot();
-    for (const listener of this.listeners) listener(snap);
+    this.lastSnap = this.snapshot();
+    for (const listener of this.listeners) listener();
   }
 }

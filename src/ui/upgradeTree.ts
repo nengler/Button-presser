@@ -2,14 +2,14 @@ import { UPGRADE_DEFS } from "../game/upgrades.ts";
 import type { UpgradeId } from "../game/types.ts";
 import { COLORS } from "../game/view.ts";
 import {
-  EXTRA_PADS,
+  EXTRA_BUTTONS,
   STAR_COST,
   STAR_MAX,
-  extraPadById,
-  isExtraPadId,
-  type ExtraPadId,
+  extraButtonById,
+  isExtraButtonId,
+  type ExtraButtonId,
   type Glyph,
-} from "../game/pads.ts";
+} from "../game/buttons.ts";
 
 export const NODE = 16;
 
@@ -195,10 +195,14 @@ export const ICONS: Record<string, Glyph> = {
     "..XXXX..",
     "........",
   ],
-  ...Object.fromEntries(EXTRA_PADS.map((p) => [p.id, p.icon])),
+  ...Object.fromEntries(
+    EXTRA_BUTTONS.map(function (p) {
+      return [p.id, p.icon];
+    }),
+  ),
 };
 
-export type TreeNodeId = UpgradeId | "star" | ExtraPadId;
+export type TreeNodeId = UpgradeId | "star" | ExtraButtonId;
 
 export type TreeNode = {
   id: TreeNodeId;
@@ -311,22 +315,24 @@ const UPGRADE_NODES: TreeNode[] = [
     x: 268,
     y: 36,
     parents: ["star"],
-    title: "PADS",
-    blurb: "Extra pads earn more",
+    title: "BTNS",
+    blurb: "Extra buttons earn more",
   },
 ];
 
 /** Bottom roots → top/right advanced, with a merge into star. */
 export const TREE_NODES: TreeNode[] = [
   ...UPGRADE_NODES,
-  ...EXTRA_PADS.map((pad) => ({
-    id: pad.id,
-    x: pad.treeX,
-    y: pad.treeY,
-    parents: ["star"] as TreeNodeId[],
-    title: pad.name,
-    blurb: pad.blurb,
-  })),
+  ...EXTRA_BUTTONS.map(function (button) {
+    return {
+      id: button.id,
+      x: button.treeX,
+      y: button.treeY,
+      parents: ["star"] as TreeNodeId[],
+      title: button.name,
+      blurb: button.blurb,
+    };
+  }),
 ];
 
 export type NodeProgress = {
@@ -352,13 +358,13 @@ export function nodeProgress(
       maxed: stars >= STAR_MAX,
     };
   }
-  if (isExtraPadId(id)) {
-    const pad = extraPadById(id)!;
+  if (isExtraButtonId(id)) {
+    const button = extraButtonById(id)!;
     const owned = unlockedPads.includes(id);
     return {
       level: owned ? 1 : 0,
       max: 1,
-      cost: owned ? null : pad.cost,
+      cost: owned ? null : button.cost,
       owned,
       maxed: owned,
     };
@@ -375,9 +381,8 @@ export function nodeProgress(
   };
 }
 
-export function parentsOwned(
-  node: TreeNode,
-  progress: Record<TreeNodeId, NodeProgress>,
-): boolean {
-  return node.parents.every((p) => progress[p]?.owned);
+export function parentsOwned(node: TreeNode, progress: Record<TreeNodeId, NodeProgress>): boolean {
+  return node.parents.every(function (p) {
+    return progress[p]?.owned;
+  });
 }

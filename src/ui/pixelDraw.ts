@@ -12,22 +12,46 @@ export function fadeOnInk(fg: string, alpha: number): string {
   return `rgb(${Math.round(r * t + ir * (1 - t))},${Math.round(g * t + ig * (1 - t))},${Math.round(b * t + ib * (1 - t))})`;
 }
 
-export function fillStar(
+const CURSOR_ROWS = [
+  "10",
+  "110",
+  "1210",
+  "12210",
+  "122210",
+  "1222210",
+  "1222111",
+  "1210",
+  "11010",
+  "10 110",
+  "    10",
+] as const;
+
+/** Classic arrow, hotspot at the tip. `hot` is gold fill (game button / UI). */
+export function fillCursor(
   ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
+  x: number,
+  y: number,
+  hot: boolean,
+  texel = 1,
 ): void {
+  const fill = hot ? COLORS.goldHot : COLORS.foam;
+  const ink = COLORS.ink;
+  for (const [row, cells] of CURSOR_ROWS.entries()) {
+    for (const [col, ch] of [...cells].entries()) {
+      if (ch === "0" || ch === " ") continue;
+      ctx.fillStyle = ch === "1" ? ink : fill;
+      ctx.fillRect(x + col * texel, y + row * texel, texel, texel);
+    }
+  }
+}
+
+export function fillStar(ctx: CanvasRenderingContext2D, cx: number, cy: number): void {
   ctx.fillRect(cx, cy - 3, 1, 7);
   ctx.fillRect(cx - 3, cy, 7, 1);
   ctx.fillRect(cx - 1, cy - 1, 3, 3);
 }
 
-export function fillDisc(
-  ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  r: number,
-): void {
+export function fillDisc(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number): void {
   if (r < 1) {
     ctx.fillRect(cx, cy, 1, 1);
     return;
@@ -39,11 +63,7 @@ export function fillDisc(
   }
 }
 
-function eachRingPixel(
-  rInner: number,
-  rOuter: number,
-  fn: (x: number, y: number) => void,
-): void {
+function eachRingPixel(rInner: number, rOuter: number, fn: (x: number, y: number) => void): void {
   const inner2 = rInner * rInner;
   const outer2 = rOuter * rOuter;
   for (let y = -rOuter; y <= rOuter; y++) {
@@ -61,7 +81,9 @@ export function fillRing(
   rInner: number,
   rOuter: number,
 ): void {
-  eachRingPixel(rInner, rOuter, (x, y) => ctx.fillRect(cx + x, cy + y, 1, 1));
+  eachRingPixel(rInner, rOuter, function (x, y) {
+    ctx.fillRect(cx + x, cy + y, 1, 1);
+  });
 }
 
 /** Sweep from 6 o'clock toward 3 o'clock. `sweep` is 0–2π radians. */
@@ -76,7 +98,7 @@ export function fillSweepRing(
   const tau = Math.PI * 2;
   const span = Math.max(0, Math.min(tau, sweep));
   if (span <= 0) return;
-  eachRingPixel(rInner, rOuter, (x, y) => {
+  eachRingPixel(rInner, rOuter, function (x, y) {
     let fromBottom = Math.PI / 2 - Math.atan2(y, x);
     if (fromBottom < 0) fromBottom += tau;
     if (fromBottom <= span) ctx.fillRect(cx + x, cy + y, 1, 1);

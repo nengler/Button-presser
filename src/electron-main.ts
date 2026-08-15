@@ -23,13 +23,13 @@ function createWindow(): void {
   void win.loadFile(path.join(root, "dist", "index.html"));
 }
 
-app.whenReady().then(() => {
+void app.whenReady().then(function () {
   createWindow();
-  app.on("activate", () => {
+  app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-app.on("window-all-closed", () => {
+app.on("window-all-closed", function () {
   if (process.platform !== "darwin") app.quit();
 });

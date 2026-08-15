@@ -14,7 +14,7 @@ export type UpgradeId =
   | "starSkill"
   | "padPay";
 
-export type PadKind = "beat" | "double" | "pair";
+export type ButtonKind = "beat" | "double" | "pair";
 
 export interface UpgradeDef {
   id: UpgradeId;
@@ -30,7 +30,6 @@ export interface UpgradeDef {
 export interface GameSave {
   version: 4;
   score: number;
-  bestStreak: number;
   upgrades: Record<UpgradeId, number>;
   stars: number;
   unlockedPads: string[];
@@ -45,3 +44,22 @@ export interface PressResult {
   streak: number;
   beatIndex: number;
 }
+
+export type Burst = { nonce: number; x: number; y: number };
+
+export type ButtonView = { id: string; phase: number; mark: 0 | 1 | 2 };
+
+export type GameSnapshot = {
+  score: number;
+  streak: number;
+  interval: number;
+  phase: number;
+  lastResult: PressResult | null;
+  upgrades: GameSave["upgrades"];
+  running: boolean;
+  stars: number;
+  unlockedPads: string[];
+  hitNonce: number;
+  hitX: number;
+  hitY: number;
+};

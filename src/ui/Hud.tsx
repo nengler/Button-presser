@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState, type CSSProperties } from "react";
 import type { GameSnapshot } from "../game/Game.ts";
 import { COLORS } from "../game/view.ts";
-import { useLerpedScore } from "./useLerpedScore.ts";
+import { useLerpedScore } from "./hooks/useLerpedScore.ts";
 
-const FLY_MS = 480;
-const GRADE_MS = 560;
 const SCORE_X = 10;
 const SCORE_Y = 6;
 
@@ -43,41 +41,21 @@ type Puff = {
   y: number;
 };
 
-function FlyChip({
-  chip,
-  onLand,
-}: {
-  chip: Chip;
-  onLand: (id: number, pts: number) => void;
-}) {
-  const [u, setU] = useState(0);
-
-  useEffect(() => {
-    const t0 = performance.now();
-    let raf = 0;
-    let landed = false;
-    const tick = (now: number) => {
-      const next = Math.min(1, (now - t0) / FLY_MS);
-      setU(next);
-      if (next < 1) raf = requestAnimationFrame(tick);
-      else if (!landed) {
-        landed = true;
-        onLand(chip.id, chip.pts);
-      }
+function FlyChip({ chip, onLand }: { chip: Chip; onLand: (id: number) => void }) {
+  const style: CSSProperties & { "--x0": string; "--y0": string; "--x1": string; "--y1": string } =
+    {
+      color: chip.color,
+      "--x0": `${chip.x0}px`,
+      "--y0": `${chip.y0}px`,
+      "--x1": `${SCORE_X}px`,
+      "--y1": `${SCORE_Y}px`,
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [chip.id, chip.pts, onLand]);
-
-  const e = 1 - (1 - u) ** 3;
   return (
     <div
       className="score-chip"
-      style={{
-        left: chip.x0 + (SCORE_X - chip.x0) * e,
-        top: chip.y0 + (SCORE_Y - chip.y0) * e,
-        color: chip.color,
-        opacity: 1 - e * 0.2,
+      style={style}
+      onAnimationEnd={function () {
+        onLand(chip.id);
       }}
     >
       +{chip.pts}
@@ -86,34 +64,12 @@ function FlyChip({
 }
 
 function GradePuff({ puff, onDone }: { puff: Puff; onDone: (id: number) => void }) {
-  const [u, setU] = useState(0);
-
-  useEffect(() => {
-    const t0 = performance.now();
-    let raf = 0;
-    let done = false;
-    const tick = (now: number) => {
-      const next = Math.min(1, (now - t0) / GRADE_MS);
-      setU(next);
-      if (next < 1) raf = requestAnimationFrame(tick);
-      else if (!done) {
-        done = true;
-        onDone(puff.id);
-      }
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [onDone, puff.id]);
-
-  const rise = Math.round(u * 8);
   return (
     <div
       className="grade-puff"
-      style={{
-        left: puff.x,
-        top: puff.y - rise,
-        color: puff.color,
-        opacity: 1 - u,
+      style={{ left: puff.x, top: puff.y, color: puff.color }}
+      onAnimationEnd={function () {
+        onDone(puff.id);
       }}
     >
       {puff.label}
@@ -121,112 +77,78 @@ function GradePuff({ puff, onDone }: { puff: Puff; onDone: (id: number) => void 
   );
 }
 
-function useNudge(value: number): boolean {
-  const [on, setOn] = useState(false);
-  const prev = useRef(value);
-  useEffect(() => {
-    if (prev.current === value) return;
-    prev.current = value;
-    setOn(true);
-    const t = window.setTimeout(() => setOn(false), 220);
-    return () => window.clearTimeout(t);
-  }, [value]);
-  return on;
-}
-
-export function Hud({
-  snap,
-  onTree,
-}: {
-  snap: GameSnapshot;
-  onTree: () => void;
-}) {
-  const [shown, setShown] = useState(() => Math.floor(snap.score));
-  const [pop, setPop] = useState(false);
+export function Hud({ snap, onTree }: { snap: GameSnapshot; onTree: () => void }) {
   const [chips, setChips] = useState<Chip[]>([]);
   const [puffs, setPuffs] = useState<Puff[]>([]);
-  const shownRef = useRef(shown);
-  const pendingRef = useRef(0);
-  const hitNonceRef = useRef(snap.hitNonce);
-  const gradeNonceRef = useRef(snap.hitNonce);
-  const chipAlive = useRef(new Set<number>());
-  const nextId = useRef(1);
-  shownRef.current = shown;
+  const [pop, setPop] = useState(false);
+  const [seenNonce, setSeenNonce] = useState(snap.hitNonce);
+  const [seenScore, setSeenScore] = useState(function () {
+    return Math.floor(snap.score);
+  });
 
-  const strNudge = useNudge(snap.streak);
-  const bestNudge = useNudge(snap.bestStreak);
-  const scoreText = useLerpedScore(shown);
+  const total = Math.floor(snap.score);
+  let pending = chips.reduce(function (sum, chip) {
+    return sum + chip.pts;
+  }, 0);
 
-  useEffect(() => {
-    if (snap.hitNonce === gradeNonceRef.current) return;
-    gradeNonceRef.current = snap.hitNonce;
+  if (total < seenScore) {
+    pending = 0;
+    setSeenScore(total);
+    setSeenNonce(snap.hitNonce);
+    setChips([]);
+  } else if (snap.hitNonce !== seenNonce) {
+    const delta = total - seenScore;
+    setSeenNonce(snap.hitNonce);
+    setSeenScore(total);
     const result = snap.lastResult;
-    if (!result) return;
-    setPuffs((list) => [
-      ...list,
-      {
-        id: nextId.current++,
-        label: result.grade.toUpperCase(),
-        color: gradeColor(result.grade),
-        x: snap.hitX - 18,
-        y: snap.hitY - 16,
-      },
-    ]);
-  }, [snap.hitNonce, snap.hitX, snap.hitY, snap.lastResult]);
-
-  useEffect(() => {
-    const total = Math.floor(snap.score);
-    const tracked = shownRef.current + pendingRef.current;
-    if (total < tracked) {
-      pendingRef.current = 0;
-      chipAlive.current.clear();
-      setChips([]);
-      shownRef.current = total;
-      setShown(total);
-      return;
+    if (result) {
+      setPuffs(function (list) {
+        if (
+          list.some(function (p) {
+            return p.id === snap.hitNonce;
+          })
+        ) {
+          return list;
+        }
+        return [
+          ...list,
+          {
+            id: snap.hitNonce,
+            label: result.grade.toUpperCase(),
+            color: gradeColor(result.grade),
+            x: snap.hitX - 18,
+            y: snap.hitY - 16,
+          },
+        ];
+      });
     }
-    const delta = total - tracked;
-    if (delta <= 0) return;
-    pendingRef.current += delta;
-    const fromHit = snap.hitNonce !== hitNonceRef.current;
-    hitNonceRef.current = snap.hitNonce;
-    if (!fromHit) {
-      pendingRef.current -= delta;
-      shownRef.current += delta;
-      setShown(shownRef.current);
-      return;
+    if (delta > 0) {
+      pending += delta;
+      setChips(function (list) {
+        if (
+          list.some(function (c) {
+            return c.id === snap.hitNonce;
+          })
+        ) {
+          return list;
+        }
+        return [
+          ...list,
+          {
+            id: snap.hitNonce,
+            pts: delta,
+            color: result && result.points === delta ? gradeColor(result.grade) : COLORS.goldHot,
+            x0: snap.hitX - 8,
+            y0: snap.hitY - 4,
+          },
+        ];
+      });
     }
-    const color =
-      snap.lastResult && snap.lastResult.points === delta
-        ? gradeColor(snap.lastResult.grade)
-        : COLORS.goldHot;
-    const id = nextId.current++;
-    chipAlive.current.add(id);
-    setChips((list) => [
-      ...list,
-      {
-        id,
-        pts: delta,
-        color,
-        x0: snap.hitX - 8,
-        y0: snap.hitY - 4,
-      },
-    ]);
-  }, [snap.score, snap.hitNonce, snap.hitX, snap.hitY, snap.lastResult]);
+  } else if (total !== seenScore) {
+    setSeenScore(total);
+  }
 
-  const onLand = useCallback((id: number, pts: number) => {
-    if (!chipAlive.current.delete(id)) return;
-    pendingRef.current = Math.max(0, pendingRef.current - pts);
-    shownRef.current += pts;
-    setShown(shownRef.current);
-    setChips((list) => list.filter((c) => c.id !== id));
-    setPop(true);
-    window.setTimeout(() => setPop(false), 140);
-  }, []);
-
-  const onPuffDone = useCallback((id: number) => {
-    setPuffs((list) => list.filter((p) => p.id !== id));
-  }, []);
+  const scoreText = useLerpedScore(total - pending);
 
   return (
     <>
@@ -235,20 +157,51 @@ export function Hud({
       </button>
 
       <div className="stats">
-        <span className={`stat gold${pop ? " pop" : ""}`}>SCR {scoreText}</span>
-        <span className={`stat${strNudge ? " nudge" : ""}`}>STR {snap.streak}</span>
-        <span className={`stat sage${bestNudge ? " nudge" : ""}`}>BEST {snap.bestStreak}</span>
-        {snap.stars > 0 ? (
-          <span className="stat">STAR {snap.stars}</span>
-        ) : null}
+        <span
+          className={`stat gold${pop ? " pop" : ""}`}
+          onAnimationEnd={function (e) {
+            if (e.animationName === "stat-nudge") setPop(false);
+          }}
+        >
+          SCR {scoreText}
+        </span>
+        <span key={snap.streak} className="stat nudge">
+          STR {snap.streak}
+        </span>
+        {snap.stars > 0 ? <span className="stat">STAR {snap.stars}</span> : null}
       </div>
 
-      {puffs.map((puff) => (
-        <GradePuff key={puff.id} puff={puff} onDone={onPuffDone} />
-      ))}
-      {chips.map((chip) => (
-        <FlyChip key={chip.id} chip={chip} onLand={onLand} />
-      ))}
+      {puffs.map(function (puff) {
+        return (
+          <GradePuff
+            key={puff.id}
+            puff={puff}
+            onDone={function (id) {
+              setPuffs(function (list) {
+                return list.filter(function (p) {
+                  return p.id !== id;
+                });
+              });
+            }}
+          />
+        );
+      })}
+      {chips.map(function (chip) {
+        return (
+          <FlyChip
+            key={chip.id}
+            chip={chip}
+            onLand={function (id) {
+              setChips(function (list) {
+                return list.filter(function (c) {
+                  return c.id !== id;
+                });
+              });
+              setPop(true);
+            }}
+          />
+        );
+      })}
     </>
   );
 }

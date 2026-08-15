@@ -1,5 +1,5 @@
 import type { GameSave, UpgradeId } from "./types.ts";
-import { extraPadById } from "./pads.ts";
+import { extraButtonById } from "./buttons.ts";
 import { emptyUpgrades } from "./upgrades.ts";
 
 const SAVE_KEY = "button-presser-save-v1";
@@ -8,7 +8,6 @@ export function defaultSave(): GameSave {
   return {
     version: 4,
     score: 0,
-    bestStreak: 0,
     upgrades: emptyUpgrades(),
     stars: 0,
     unlockedPads: [],
@@ -35,7 +34,6 @@ export function loadSave(): GameSave {
     const parsed = JSON.parse(raw) as {
       version?: number;
       score?: number;
-      bestStreak?: number;
       upgrades?: Record<string, unknown>;
       stars?: number;
       minions?: number;
@@ -50,9 +48,9 @@ export function loadSave(): GameSave {
       return defaultSave();
     }
     const pads = Array.isArray(parsed.unlockedPads)
-      ? parsed.unlockedPads.filter(
-          (id): id is string => typeof id === "string" && extraPadById(id) !== undefined,
-        )
+      ? parsed.unlockedPads.filter(function (id): id is string {
+          return typeof id === "string" && extraButtonById(id) !== undefined;
+        })
       : [];
     const stars =
       typeof parsed.stars === "number"
@@ -63,8 +61,6 @@ export function loadSave(): GameSave {
     return {
       version: 4,
       score: typeof parsed.score === "number" ? parsed.score : 0,
-      bestStreak:
-        typeof parsed.bestStreak === "number" ? parsed.bestStreak : 0,
       upgrades: migrateUpgrades(parsed.upgrades),
       stars,
       unlockedPads: pads,

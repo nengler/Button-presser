@@ -5,108 +5,147 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
     id: "bonusHits",
     name: "Every",
     description: "Every few successful hits, extra points.",
-    effect: (level) => {
+    effect(level) {
       const n = Math.max(1, level);
       return `Every ${bonusHitPeriod(n)} hits, +${bonusHitPayout(n)} points`;
     },
-    cost: (level) => Math.floor(80 * Math.pow(1.7, level)),
+    cost(level) {
+      return Math.floor(80 * Math.pow(1.7, level));
+    },
     maxLevel: 7,
   },
   multiplier: {
     id: "multiplier",
     name: "Multiplier",
     description: "Earn more points per successful press.",
-    effect: (level) => `Hits pay ×${scoreMultiplier(Math.max(1, level)).toFixed(2)}`,
-    cost: (level) => Math.floor(90 * Math.pow(1.75, level)),
+    effect(level) {
+      return `Hits pay ×${scoreMultiplier(Math.max(1, level)).toFixed(2)}`;
+    },
+    cost(level) {
+      return Math.floor(90 * Math.pow(1.75, level));
+    },
     maxLevel: 10,
   },
   focus: {
     id: "focus",
     name: "Focus",
     description: "Widen the timing window so near-misses still score.",
-    effect: (level) => `Score if within ${windowMs(Math.max(1, level))}ms`,
-    cost: (level) => Math.floor(110 * Math.pow(1.8, level)),
+    effect(level) {
+      return `Score if within ${windowMs(Math.max(1, level))}ms`;
+    },
+    cost(level) {
+      return Math.floor(110 * Math.pow(1.8, level));
+    },
     maxLevel: 8,
   },
   tempo: {
     id: "tempo",
     name: "Steady Tempo",
     description: "Slightly lengthen the beat interval — easier to settle into.",
-    effect: (level) => `Main beat every ${intervalMs(Math.max(1, level))}ms`,
-    cost: (level) => Math.floor(130 * Math.pow(1.8, level)),
+    effect(level) {
+      return `Main beat every ${intervalMs(Math.max(1, level))}ms`;
+    },
+    cost(level) {
+      return Math.floor(130 * Math.pow(1.8, level));
+    },
     maxLevel: 5,
   },
   combo: {
     id: "combo",
     name: "Combo Chain",
     description: "Streaks multiply your score harder.",
-    effect: (level) => {
+    effect(level) {
       const n = Math.max(1, level);
       return `+${Math.round((0.04 + n * 0.02) * 100)}% per streak hit`;
     },
-    cost: (level) => Math.floor(120 * Math.pow(1.8, level)),
+    cost(level) {
+      return Math.floor(120 * Math.pow(1.8, level));
+    },
     maxLevel: 8,
   },
   perfectPay: {
     id: "perfectPay",
     name: "Perfect Pay",
     description: "Perfect hits are worth extra.",
-    effect: (level) =>
-      `Perfects ×${perfectPayFactor(Math.max(1, level)).toFixed(2)}`,
-    cost: (level) => Math.floor(140 * Math.pow(1.8, level)),
+    effect(level) {
+      return `Perfects ×${perfectPayFactor(Math.max(1, level)).toFixed(2)}`;
+    },
+    cost(level) {
+      return Math.floor(140 * Math.pow(1.8, level));
+    },
     maxLevel: 8,
   },
   shield: {
     id: "shield",
     name: "Shield",
     description: "Each Start, ignore that many misses without breaking streak.",
-    effect: (level) =>
-      `${shieldCharges(Math.max(1, level))} miss${shieldCharges(Math.max(1, level)) === 1 ? "" : "es"} ignored per Start`,
-    cost: (level) => Math.floor(150 * Math.pow(1.85, level)),
+    effect(level) {
+      const n = Math.max(1, level);
+      return `${shieldCharges(n)} miss${shieldCharges(n) === 1 ? "" : "es"} ignored per Start`;
+    },
+    cost(level) {
+      return Math.floor(150 * Math.pow(1.85, level));
+    },
     maxLevel: 3,
   },
   recovery: {
     id: "recovery",
     name: "Clutch",
     description: "The hit after a miss is worth extra.",
-    effect: (level) =>
-      `After a miss, next hit ×${recoveryFactor(Math.max(1, level)).toFixed(2)}`,
-    cost: (level) => Math.floor(125 * Math.pow(1.8, level)),
+    effect(level) {
+      return `After a miss, next hit ×${recoveryFactor(Math.max(1, level)).toFixed(2)}`;
+    },
+    cost(level) {
+      return Math.floor(125 * Math.pow(1.8, level));
+    },
     maxLevel: 5,
   },
   starRate: {
     id: "starRate",
     name: "Star Pulse",
     description: "Stars attempt leftover beats more often.",
-    effect: (level) =>
-      `Stars try leftover beats every ${starAttemptEvery(Math.max(1, level))}`,
-    cost: (level) => Math.floor(180 * Math.pow(1.85, level)),
+    effect(level) {
+      return `Stars try leftover beats every ${starAttemptEvery(Math.max(1, level))}`;
+    },
+    cost(level) {
+      return Math.floor(180 * Math.pow(1.85, level));
+    },
     maxLevel: 5,
   },
   starAim: {
     id: "starAim",
     name: "Star Aim",
     description: "Stars tap closer to the beat.",
-    effect: (level) => `Stars tap ~${starAimErrorMs(Math.max(1, level))}ms late`,
-    cost: (level) => Math.floor(180 * Math.pow(1.85, level)),
+    effect(level) {
+      return `Stars tap ~${starAimErrorMs(Math.max(1, level))}ms late`;
+    },
+    cost(level) {
+      return Math.floor(180 * Math.pow(1.85, level));
+    },
     maxLevel: 5,
   },
   starSkill: {
     id: "starSkill",
     name: "Star Share",
     description: "Stars use a share of your scoring upgrades.",
-    effect: (level) =>
-      `Stars use ${Math.round(starShareFactor(Math.max(1, level)) * 100)}% of your scoring upgrades`,
-    cost: (level) => Math.floor(200 * Math.pow(1.85, level)),
+    effect(level) {
+      return `Stars use ${Math.round(starShareFactor(Math.max(1, level)) * 100)}% of your scoring upgrades`;
+    },
+    cost(level) {
+      return Math.floor(200 * Math.pow(1.85, level));
+    },
     maxLevel: 5,
   },
   padPay: {
     id: "padPay",
-    name: "Pad Pay",
-    description: "Extra pads earn more points.",
-    effect: (level) =>
-      `Extra pads ×${padPayFactor(Math.max(1, level)).toFixed(2)}`,
-    cost: (level) => Math.floor(160 * Math.pow(1.8, level)),
+    name: "Button Pay",
+    description: "Extra buttons earn more points.",
+    effect(level) {
+      return `Extra buttons ×${padPayFactor(Math.max(1, level)).toFixed(2)}`;
+    },
+    cost(level) {
+      return Math.floor(160 * Math.pow(1.8, level));
+    },
     maxLevel: 6,
   },
 };

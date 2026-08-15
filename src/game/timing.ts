@@ -1,10 +1,5 @@
 import type { PressResult } from "./types.ts";
-import {
-  comboFactor,
-  perfectPayFactor,
-  scoreMultiplier,
-  windowMs,
-} from "./upgrades.ts";
+import { comboFactor, perfectPayFactor, scoreMultiplier, windowMs } from "./upgrades.ts";
 
 const GRADE_THRESHOLDS = {
   perfect: 0.12,
@@ -49,8 +44,7 @@ export function scorePress(opts: {
   else if (ratio <= GRADE_THRESHOLDS.great) grade = "great";
   else if (ratio <= GRADE_THRESHOLDS.good) grade = "good";
 
-  const perfectBoost =
-    grade === "perfect" ? perfectPayFactor(opts.perfectLevel ?? 0) : 1;
+  const perfectBoost = grade === "perfect" ? perfectPayFactor(opts.perfectLevel ?? 0) : 1;
   const points = Math.round(
     base *
       scoreMultiplier(opts.multiplierLevel) *
@@ -80,19 +74,12 @@ export function nearestBeatError(
   return { errorMs: now - beatTime, beatIndex };
 }
 
-export function withinDoubleGap(
-  firstAt: number,
-  secondAt: number,
-  gapMs: number,
-): boolean {
+export function withinDoubleGap(firstAt: number, secondAt: number, gapMs: number): boolean {
   const dt = secondAt - firstAt;
   return dt > 0 && dt <= gapMs;
 }
 
 /** Second consecutive in-window hit scores. A gap in beat index restarts the pair. */
-export function pairCompletes(
-  lastSuccessBeat: number,
-  beatIndex: number,
-): boolean {
+export function pairCompletes(lastSuccessBeat: number, beatIndex: number): boolean {
   return lastSuccessBeat >= 0 && beatIndex === lastSuccessBeat + 1;
 }

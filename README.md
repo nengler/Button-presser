@@ -2,7 +2,7 @@
 
 A TypeScript timing game for the **browser** and **Electron**.
 
-The UI is a **320×180** pixel stage (16:9), integer-scaled to the window. Pads and sparks draw on a 2D canvas (`requestAnimationFrame` + delta time). The HUD and upgrade tree are React, painted at 8px and scaled up so they stay chunky.
+The UI is a **320×180** pixel stage (16:9), scaled to fit the window with nearest-neighbor upscaling. Buttons and sparks draw on a 2D canvas (`requestAnimationFrame` + delta time). The HUD and upgrade tree are React, painted at 8px and scaled up so they stay chunky.
 
 Press on every beat (about once per second). The closer you are to the exact beat, the more points you earn. Spend points on a skill tree as you go.
 
@@ -26,13 +26,13 @@ npm start          # browser → http://localhost:5173
 npm run electron   # desktop window (production build)
 ```
 
-| Script | What it does |
-|--------|----------------|
-| `npm start` | Vite dev server |
-| `npm run build` | Typecheck + Electron main + Vite `dist/` |
-| `npm run electron` | Build + open Electron |
-| `npm run smoke` | Timing/scoring checks |
-| `npm run preview` | Serve the production build |
+| Script             | What it does                             |
+| ------------------ | ---------------------------------------- |
+| `npm start`        | Vite dev server                          |
+| `npm run build`    | Typecheck + Electron main + Vite `dist/` |
+| `npm run electron` | Build + open Electron                    |
+| `npm run smoke`    | Timing/scoring checks                    |
+| `npm run preview`  | Serve the production build               |
 
 ## How to play
 
@@ -41,13 +41,13 @@ npm run electron   # desktop window (production build)
 3. Grades: perfect → great → good → ok → miss. Misses break your streak.
 4. Open **TREE** to buy upgrades. Paths gate later nodes. Progress saves in `localStorage`.
 
-EVERY is the root: bonus points every few successful hits (more often and bigger as you rank it up). That unlocks MULT, FOCUS, and PERF. SHIELD ignores a miss without breaking streak. CLUTCH pays extra on the hit after a miss. MULT and FOCUS merge into STAR (helpers that tap leftover beats you miss). Stars start slow and late — buy PULSE, AIM, and SHARE so they fire more often, closer to the beat, and with a cut of your scoring upgrades. PADS makes extra pads worth more. Extra pads: a 1.5s timer, a 3s double-tap, and a 0.75s pad that only scores every two hits in a row.
+EVERY is the root: bonus points every few successful hits (more often and bigger as you rank it up). That unlocks MULT, FOCUS, and PERF. SHIELD ignores a miss without breaking streak. CLUTCH pays extra on the hit after a miss. MULT and FOCUS merge into STAR (helpers that tap leftover beats you miss). Stars start slow and late — buy PULSE, AIM, and SHARE so they fire more often, closer to the beat, and with a cut of your scoring upgrades. BTNS makes extra buttons worth more. Extra buttons: a 1.5s timer, a 3s double-tap, and a 0.75s button that only scores every two hits in a row.
 
 ## Layout
 
 ```
 src/
-  game/             # scoring, save, pads
+  game/             # scoring, save, buttons
   ui/               # HUD, skill tree, canvas playfield
   App.tsx
   electron-main.ts
@@ -57,6 +57,6 @@ src/
 
 - Upgrades: `src/game/upgrades.ts`
 - Tree layout: `src/ui/upgradeTree.ts`
-- Pads: `src/game/pads.ts` (`EXTRA_PADS` — stage-pixel `x`/`y`, timer, `kind`, tree slot, 8×8 `icon`)
+- Buttons: `src/game/buttons.ts` (`EXTRA_BUTTONS` — stage-pixel `x`/`y`, timer, `kind`, tree slot, 8×8 `icon`)
 - Scoring: `src/game/timing.ts`
 - Playfield drawing: `src/ui/pixelDraw.ts` (stage pixels, Y down)

@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import type { Game } from "../game/Game.ts";
-import { padById, starsOnStation } from "../game/pads.ts";
+import { buttonById, starsOnButton } from "../game/buttons.ts";
 import { COLORS, HEIGHT, WIDTH } from "../game/view.ts";
 import { fadeOnInk, fillDisc, fillRing, fillStar, fillSweepRing } from "./pixelDraw.ts";
-import { hitPad, pointerToCanvas } from "./pointer.ts";
+import { hitButton, pointerToCanvas } from "./pointer.ts";
+import { armSfx, playPress } from "./sfx.ts";
 
 const RING_IN = 30;
 const RING_OUT = 34;
@@ -65,118 +66,112 @@ function spawnSparks(specks: Speck[], x: number, y: number) {
 }
 
 export function Playfield({ game }: { game: Game }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef(game);
   gameRef.current = game;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d", { alpha: true });
-    if (!canvas || !ctx) return;
-    ctx.imageSmoothingEnabled = false;
-
-    const specks: Speck[] = [];
-    let lastNonce = 0;
-    let elapsed = 0;
-    let last = performance.now();
-    let raf = 0;
-
-    const tick = (now: number) => {
-      const dt = Math.min(MAX_DT, Math.max(0, (now - last) / 1000));
-      last = now;
-      elapsed += dt;
-
-      const g = gameRef.current;
-      g.tick(now);
-      if (g.burst.nonce !== 0 && g.burst.nonce !== lastNonce) {
-        lastNonce = g.burst.nonce;
-        spawnSparks(specks, g.burst.x, g.burst.y);
-      }
-      for (let i = specks.length - 1; i >= 0; i--) {
-        const p = specks[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt / p.max;
-        if (p.life <= 0) specks.splice(i, 1);
-      }
-
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
-      const pads = g.pads(now);
-      for (const pad of pads) {
-        const def = padById(pad.id);
-        drawBeat(ctx, def.x, def.y, pad.phase, def.color, pad.mark);
-      }
-
-      const n = Math.max(pads.length, 1);
-      const stars = g.stars;
-      ctx.fillStyle = COLORS.foam;
-      for (let i = 0; i < pads.length; i++) {
-        const count = starsOnStation(stars, i, n);
-        if (count === 0) continue;
-        const pad = padById(pads[i]!.id);
-        for (let m = 0; m < count; m++) {
-          const angle = (m / count) * Math.PI * 2 + elapsed * STAR_SPIN;
-          fillStar(
-            ctx,
-            Math.round(pad.x + Math.cos(angle) * STAR_ORBIT),
-            Math.round(pad.y - Math.sin(angle) * STAR_ORBIT),
-          );
-        }
-      }
-
-      ctx.fillStyle = COLORS.goldHot;
-      for (const p of specks) {
-        fillDisc(
-          ctx,
-          Math.round(p.x),
-          Math.round(p.y),
-          Math.max(1, Math.round(1 + p.life * 3)),
-        );
-      }
-
-      raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-
-    const stage: HTMLElement = canvas.closest(".stage") ?? canvas;
-    const uiControl = (t: EventTarget | null) =>
-      t instanceof Element && !!t.closest("button, .tree");
-
-    const onPointerDown = (e: PointerEvent) => {
-      if (!e.isPrimary) return;
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      if (uiControl(e.target)) return;
-      const pos = pointerToCanvas(canvas, e.clientX, e.clientY);
-      if (!pos) return;
-      e.preventDefault();
-      const id = hitPad(gameRef.current.pads(), pos.x, pos.y);
-      if (!id) return;
-      gameRef.current.press(id);
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (!e.isPrimary || e.pointerType !== "mouse") return;
-      const pos = pointerToCanvas(canvas, e.clientX, e.clientY);
-      canvas.style.cursor =
-        pos && hitPad(gameRef.current.pads(), pos.x, pos.y) ? "pointer" : "default";
-    };
-
-    const opts: AddEventListenerOptions = { capture: true, passive: false };
-    stage.addEventListener("pointerdown", onPointerDown, opts);
-    stage.addEventListener("pointermove", onPointerMove, opts);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      stage.removeEventListener("pointerdown", onPointerDown, opts);
-      stage.removeEventListener("pointermove", onPointerMove, opts);
-    };
-  }, []);
-
   return (
     <div className="playfield">
-      <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} />
+      <canvas
+        ref={function (canvas) {
+          if (!canvas) return;
+          const surface = canvas;
+          const ctx = surface.getContext("2d", { alpha: true });
+          if (!ctx) return;
+          const draw = ctx;
+          draw.imageSmoothingEnabled = false;
+
+          const specks: Speck[] = [];
+          let lastNonce = 0;
+          let elapsed = 0;
+          let last = performance.now();
+          let raf = 0;
+
+          function tick(now: number) {
+            const dt = Math.min(MAX_DT, Math.max(0, (now - last) / 1000));
+            last = now;
+            elapsed += dt;
+
+            const g = gameRef.current;
+            g.tick(now);
+            if (g.burst.nonce !== 0 && g.burst.nonce !== lastNonce) {
+              lastNonce = g.burst.nonce;
+              spawnSparks(specks, g.burst.x, g.burst.y);
+            }
+            for (let i = specks.length - 1; i >= 0; i--) {
+              const p = specks[i]!;
+              p.x += p.vx * dt;
+              p.y += p.vy * dt;
+              p.life -= dt / p.max;
+              if (p.life <= 0) specks.splice(i, 1);
+            }
+
+            draw.clearRect(0, 0, WIDTH, HEIGHT);
+
+            const buttons = g.buttons(now);
+            for (const button of buttons) {
+              const def = buttonById(button.id);
+              drawBeat(draw, def.x, def.y, button.phase, def.color, button.mark);
+            }
+
+            const n = Math.max(buttons.length, 1);
+            const stars = g.stars;
+            draw.fillStyle = COLORS.foam;
+            for (let i = 0; i < buttons.length; i++) {
+              const count = starsOnButton(stars, i, n);
+              if (count === 0) continue;
+              const button = buttonById(buttons[i]!.id);
+              for (let m = 0; m < count; m++) {
+                const angle = (m / count) * Math.PI * 2 + elapsed * STAR_SPIN;
+                fillStar(
+                  draw,
+                  Math.round(button.x + Math.cos(angle) * STAR_ORBIT),
+                  Math.round(button.y - Math.sin(angle) * STAR_ORBIT),
+                );
+              }
+            }
+
+            draw.fillStyle = COLORS.goldHot;
+            for (const p of specks) {
+              fillDisc(draw, Math.round(p.x), Math.round(p.y), Math.max(1, Math.round(1 + p.life * 3)));
+            }
+
+            raf = requestAnimationFrame(tick);
+          }
+
+          raf = requestAnimationFrame(tick);
+
+          const stage: HTMLElement = surface.closest(".stage") ?? surface;
+          function uiControl(t: EventTarget | null) {
+            return t instanceof Element && !!t.closest("button, .tree");
+          }
+
+          function onPointerDown(e: PointerEvent) {
+            if (!e.isPrimary) return;
+            if (e.pointerType === "mouse" && e.button !== 0) return;
+            if (uiControl(e.target)) return;
+            const pos = pointerToCanvas(surface, e.clientX, e.clientY);
+            if (!pos) return;
+            e.preventDefault();
+            armSfx();
+            const g = gameRef.current;
+            const id = hitButton(g.buttons(), pos.x, pos.y);
+            if (!id) return;
+            if (!g.press(id)) return;
+            const snap = g.snapshot();
+            if (snap.lastResult) playPress(snap.lastResult, snap.upgrades.focus);
+          }
+
+          const opts: AddEventListenerOptions = { capture: true, passive: false };
+          stage.addEventListener("pointerdown", onPointerDown, opts);
+
+          return function () {
+            cancelAnimationFrame(raf);
+            stage.removeEventListener("pointerdown", onPointerDown, opts);
+          };
+        }}
+        width={WIDTH}
+        height={HEIGHT}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { PALETTE } from "../game/view.ts";
+import { PALETTE } from "../../game/view";
 
 const BAYER = [
   [0, 8, 2, 10],

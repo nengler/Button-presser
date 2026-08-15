@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { HEIGHT, WIDTH } from "./game/view.ts";
 import { Hud } from "./ui/Hud.tsx";
+import { PixelCursor } from "./ui/PixelCursor.tsx";
 import { Playfield } from "./ui/Playfield.tsx";
-import { Sky } from "./ui/Sky.tsx";
+import { Sky } from "./ui/Sky/index.tsx";
 import { UpgradeTree } from "./ui/UpgradeTree.tsx";
-import { useGame } from "./ui/useGame.ts";
-import { usePixelScale } from "./ui/usePixelScale.ts";
+import { useGame } from "./ui/hooks/useGame.ts";
+import { usePixelScale } from "./ui/hooks/usePixelScale.ts";
 import "./ui/styles.css";
 
 export function App() {
@@ -13,40 +14,55 @@ export function App() {
   const scale = usePixelScale();
   const { game, snap, pressMain, buyUpgrade, reset } = useGame();
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code === "Escape") {
-        setTreeOpen(false);
-        return;
-      }
-      if (treeOpen) return;
-      if (e.code !== "Space" && e.key !== " ") return;
-      e.preventDefault();
-      pressMain();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [pressMain, treeOpen]);
-
   return (
-    <div className="page">
-      <Sky scale={scale} />
+    <div
+      className="page"
+      ref={function () {
+        function onKey(e: KeyboardEvent) {
+          if (e.code === "Escape") {
+            setTreeOpen(false);
+            return;
+          }
+          if (treeOpen) return;
+          if (e.code !== "Space" && e.key !== " ") return;
+          e.preventDefault();
+          pressMain();
+        }
+        window.addEventListener("keydown", onKey);
+        return function () {
+          window.removeEventListener("keydown", onKey);
+        };
+      }}
+    >
+      <Sky />
       <div className="frame" style={{ width: WIDTH * scale, height: HEIGHT * scale }}>
         <div className="stage" style={{ transform: `scale(${scale})` }}>
           <Playfield game={game} />
-          <Hud snap={snap} onTree={() => setTreeOpen(true)} />
+          <Hud
+            snap={snap}
+            onTree={function () {
+              setTreeOpen(true);
+            }}
+          />
           {treeOpen ? (
             <UpgradeTree
               snap={snap}
-              onBack={() => setTreeOpen(false)}
+              onBack={function () {
+                setTreeOpen(false);
+              }}
               onBuyUpgrade={buyUpgrade}
-              onHireStar={() => game.hireStar()}
-              onUnlockPad={(id) => game.unlockPad(id)}
+              onHireStar={function () {
+                game.hireStar();
+              }}
+              onUnlockButton={function (id) {
+                game.unlockButton(id);
+              }}
               onReset={reset}
             />
           ) : null}
         </div>
       </div>
+      <PixelCursor game={game} scale={scale} />
     </div>
   );
 }
