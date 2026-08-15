@@ -30,11 +30,13 @@ describe("upgrade formulas", function () {
     }
   });
 
-  it("widens the window and interval with focus and tempo", function () {
+  it("widens the window with focus and speeds the beat with tempo streaks", function () {
     assert.equal(windowMs(0), 180);
     assert.equal(windowMs(2), 230);
     assert.equal(intervalMs(0), 1000);
-    assert.equal(intervalMs(2), 1080);
+    assert.equal(intervalMs(2, 0), 1000);
+    assert.ok(intervalMs(2, 8) < intervalMs(1, 8));
+    assert.equal(intervalMs(1, 99), intervalMs(1, 12));
   });
 
   it("scales scoring multipliers linearly", function () {

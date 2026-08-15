@@ -46,21 +46,19 @@ describe("Button press", function () {
     assert.equal(extra.press({ now: 10, fromStar: false, world: w }).ok, false);
   });
 
-  it("keeps the current beat after the interval stretches", function () {
+  it("speeds the main beat as the streak grows", function () {
     const main = new Button({ def: MAIN_BUTTON, origin: 0 });
-    const before = emptyUpgrades();
-    const after = emptyUpgrades();
-    after.tempo = 1;
-    const w0 = world(before);
-    const w1 = world(after);
-    main.press({ now: 8000, fromStar: false, world: w0 });
-    main.press({ now: 9000, fromStar: false, world: w0 });
-    main.retargetInterval(intervalMs(0), intervalMs(1), 9000);
-    const next = main.press({ now: 10000, fromStar: false, world: w1 });
-    assert.equal(next.ok, true);
-    if (!next.ok) return;
-    assert.notEqual(next.result.grade, "miss");
-    assert.equal(main.streak, 3);
+    const upgrades = emptyUpgrades();
+    upgrades.tempo = 1;
+    const w = world(upgrades);
+    main.press({ now: 0, fromStar: false, world: w });
+    assert.equal(main.interval(upgrades), intervalMs(1, 1));
+    const second = main.press({ now: intervalMs(1, 1), fromStar: false, world: w });
+    assert.equal(second.ok, true);
+    if (!second.ok) return;
+    assert.notEqual(second.result.grade, "miss");
+    assert.equal(main.streak, 2);
+    assert.equal(main.interval(upgrades), intervalMs(1, 2));
   });
 
   it("counts a reused main beat as a miss", function () {

@@ -41,10 +41,11 @@ export const UPGRADE_DEFS: Record<UpgradeId, UpgradeDef> = {
   },
   tempo: {
     id: "tempo",
-    name: "Steady Tempo",
-    description: "Slow the main beat so there is more time between hits.",
+    name: "Tempo",
+    description: "Streaks on the main button pick up the beat.",
     effect(level) {
-      return `Main beat every ${intervalMs(Math.max(1, level))}ms`;
+      const n = Math.max(1, level);
+      return `-${tempoShaveMs(n)}ms per streak hit, down to ${intervalMs(n, TEMPO_STREAK_CAP)}ms`;
     },
     cost(level) {
       return upgradeCost(3600, 1.9, level);
@@ -227,14 +228,25 @@ export function emptyUpgrades(): Record<UpgradeId, number> {
 /** Base beat interval in ms before tempo upgrades. */
 const BASE_INTERVAL_MS = 1000;
 
+/** Ms shaved off the main beat per streak hit, per tempo level. */
+const TEMPO_SHAVE_MS = 4;
+
+/** Streak hits that still speed the main beat. */
+const TEMPO_STREAK_CAP = 12;
+
 /** Max absolute error (ms) that still scores, before focus upgrades. */
 const BASE_WINDOW_MS = 180;
 
 /** Beats a star skips between leftover attempts, by Pulse level. */
 const STAR_PERIOD = [8, 6, 4, 3, 2, 1] as const;
 
-export function intervalMs(tempoLevel: number): number {
-  return BASE_INTERVAL_MS + tempoLevel * 40;
+function tempoShaveMs(tempoLevel: number): number {
+  return Math.max(0, tempoLevel) * TEMPO_SHAVE_MS;
+}
+
+export function intervalMs(tempoLevel: number, streak = 0): number {
+  const hits = Math.min(Math.max(0, streak), TEMPO_STREAK_CAP);
+  return BASE_INTERVAL_MS - tempoShaveMs(tempoLevel) * hits;
 }
 
 export function windowMs(focusLevel: number): number {

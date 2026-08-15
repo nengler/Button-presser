@@ -14,7 +14,6 @@ import { Star } from "./Star.ts";
 import {
   bonusHitPayout,
   bonusHitPeriod,
-  intervalMs,
   padPayFactor,
   starMax,
   starPayFactor,
@@ -119,7 +118,7 @@ export class Game {
     const nextLevel = level + 1;
     this.save.upgrades[id] = nextLevel;
     if (id === "tempo" && this.running) {
-      this.mainButton.retargetInterval(intervalMs(level), intervalMs(nextLevel), this.clock);
+      this.mainButton.syncPulse(this.clock, this.save.upgrades);
     }
     persistSave(this.save);
     this.emit();
@@ -181,9 +180,10 @@ export class Game {
   }
 
   snapshot(): GameSnapshot {
-    const interval = intervalMs(this.save.upgrades.tempo);
     const now = performance.now();
     const main = this.mainButton;
+    main.syncPulse(now, this.save.upgrades);
+    const interval = main.interval(this.save.upgrades);
     return {
       score: this.save.score,
       buttonStreaks: this.buttonsList.map(function (button) {

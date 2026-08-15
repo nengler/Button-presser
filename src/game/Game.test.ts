@@ -99,6 +99,7 @@ describe("Game", function () {
     game.press(MAIN_BUTTON.id, 8000);
     game.press(MAIN_BUTTON.id, 9000);
     assert.equal(game.buyUpgrade("tempo"), true);
+    assert.ok(game.snapshot().interval < 1000);
     assert.equal(game.press(MAIN_BUTTON.id, 10000), true);
     assert.notEqual(game.snapshot().lastResult?.grade, "miss");
     assert.ok((game.snapshot().lastResult?.points ?? 0) > 0);
