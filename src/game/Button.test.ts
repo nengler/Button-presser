@@ -120,9 +120,22 @@ describe("double button", function () {
     const button = new Button({ def: twin, origin: 0 });
     const w = world();
     button.press({ now: 0, fromStar: false, world: w });
-    assert.equal(button.expirePending(200), null);
-    const expired = button.expirePending(281);
+    assert.equal(button.expirePending(200, emptyUpgrades()), null);
+    const expired = button.expirePending(281, emptyUpgrades());
     assert.equal(expired?.grade, "miss");
+  });
+
+  it("holds the pending tap longer once Gap is owned", function () {
+    const button = new Button({ def: twin, origin: 0 });
+    const upgrades = emptyUpgrades();
+    upgrades.twinGap = 2;
+    const w = world(upgrades);
+    button.press({ now: 0, fromStar: false, world: w });
+    assert.equal(button.expirePending(281, upgrades), null);
+    const second = button.press({ now: 320, fromStar: false, world: w });
+    assert.equal(second.ok, true);
+    if (!second.ok) return;
+    assert.equal(second.result.grade, "perfect");
   });
 });
 

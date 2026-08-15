@@ -277,7 +277,7 @@ function PixelIcon({ color, id }: { color: string; id: string }) {
       {rows.map(function (row, y) {
         return row.split("").map(function (ch, x) {
           return ch === "X" ? (
-            <i key={`${x}-${y}`} style={{ background: color, left: x, top: y }} />
+              <span key={`${x}-${y}`} style={{ background: color, left: x, top: y }} />
           ) : null;
         });
       })}

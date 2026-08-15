@@ -4,13 +4,19 @@ import {
   bonusHitPayout,
   bonusHitPeriod,
   comboFactor,
+  comboStreakCap,
+  doubleGapMs,
   emptyUpgrades,
+  gradeBands,
+  greatPayFactor,
   intervalMs,
   padPayFactor,
   perfectPayFactor,
   scoreMultiplier,
   starAimErrorMs,
   starAttemptEvery,
+  starMax,
+  starPayFactor,
   starShareFactor,
   UPGRADE_DEFS,
   windowMs,
@@ -42,6 +48,7 @@ describe("upgrade formulas", function () {
     assert.equal(comboFactor(1, 8), 1);
     assert.ok(comboFactor(5, 0) > 1);
     assert.ok(comboFactor(5, 4) > comboFactor(5, 0));
+    assert.ok(comboFactor(50, 0, 5) > comboFactor(50, 0, 0));
   });
 
   it("caps the every-N bonus period at 4", function () {
@@ -65,5 +72,18 @@ describe("upgrade formulas", function () {
     const def = UPGRADE_DEFS.multiplier;
     assert.ok(def.cost(1) > def.cost(0));
     assert.ok(def.effect(1).includes("×"));
+  });
+
+  it("widens grades, double-tap gap, and star roster", function () {
+    assert.ok(gradeBands(4).perfect > gradeBands(0).perfect);
+    assert.ok(gradeBands(4).great > gradeBands(4).perfect);
+    assert.equal(greatPayFactor(5), 2);
+    assert.equal(starPayFactor(0), 1);
+    assert.ok(starPayFactor(2) > 1);
+    assert.equal(comboStreakCap(0), 40);
+    assert.equal(comboStreakCap(5), 80);
+    assert.ok(doubleGapMs(2) > doubleGapMs(0));
+    assert.equal(starMax(0), 4);
+    assert.equal(starMax(4), 8);
   });
 });

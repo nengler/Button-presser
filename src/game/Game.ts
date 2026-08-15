@@ -6,7 +6,6 @@ import {
   buttonCenter,
   extraButtonById,
   MAIN_BUTTON,
-  STAR_MAX,
   starCost,
   starsOnButton,
 } from "./buttons.ts";
@@ -17,6 +16,8 @@ import {
   bonusHitPeriod,
   intervalMs,
   padPayFactor,
+  starMax,
+  starPayFactor,
   starShareFactor,
   UPGRADE_DEFS,
 } from "./upgrades.ts";
@@ -69,7 +70,7 @@ export class Game {
     if (!this.running) return;
     const upgrades = this.save.upgrades;
     for (const button of this.buttonsList) {
-      const expired = button.expirePending(now) ?? button.expireMissedBeats(now, upgrades);
+      const expired = button.expirePending(now, upgrades) ?? button.expireMissedBeats(now, upgrades);
       if (!expired) continue;
       this.ping(button.def.id);
       this.lastResult = expired;
@@ -118,7 +119,7 @@ export class Game {
   }
 
   hireStar(): boolean {
-    if (this.save.stars >= STAR_MAX) return false;
+    if (this.save.stars >= starMax(this.save.upgrades.crew)) return false;
     const cost = starCost(this.save.stars);
     if (this.save.score < cost) return false;
     this.save.score -= cost;
@@ -245,6 +246,9 @@ export class Game {
       multiplierLevel: Math.round(u.multiplier * share),
       comboLevel: Math.round(u.combo * share),
       perfectLevel: Math.round(u.perfectPay * share),
+      snapLevel: Math.round(u.snap * share),
+      greatLevel: Math.round(u.greatPay * share),
+      comboDepthLevel: Math.round(u.comboDepth * share),
       streakBefore: args.fromStar ? 0 : args.streakBefore,
       beatIndex: args.beatIndex,
     });
@@ -253,6 +257,9 @@ export class Game {
 
     if (args.extraButton && u.padPay > 0) {
       result.points = Math.round(result.points * padPayFactor(u.padPay));
+    }
+    if (args.fromStar && u.starPay > 0) {
+      result.points = Math.round(result.points * starPayFactor(u.starPay));
     }
 
     return result;

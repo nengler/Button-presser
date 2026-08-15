@@ -68,6 +68,9 @@ describe("Game", function () {
     assert.equal(game.hireStar(), false);
     assert.equal(game.stars, STAR_MAX);
     assert.ok(starCost(0) < starCost(1));
+    assert.equal(game.buyUpgrade("crew"), true);
+    assert.equal(game.hireStar(), true);
+    assert.equal(game.stars, STAR_MAX + 1);
   });
 
   it("adds the every-N bonus on a player hit", function () {
