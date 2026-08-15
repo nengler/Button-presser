@@ -70,7 +70,8 @@ export class Game {
     if (!this.running) return;
     const upgrades = this.save.upgrades;
     for (const button of this.buttonsList) {
-      const expired = button.expirePending(now, upgrades) ?? button.expireMissedBeats(now, upgrades);
+      const expired =
+        button.expirePending(now, upgrades) ?? button.expireMissedBeats(now, upgrades);
       if (!expired) continue;
       this.ping(button.def.id);
       this.lastResult = expired;

@@ -251,10 +251,7 @@ export function Shop({
   );
 }
 
-function wirePath(
-  parent: { x: number; y: number },
-  child: { x: number; y: number },
-): string {
+function wirePath(parent: { x: number; y: number }, child: { x: number; y: number }): string {
   const px = parent.x + HALF;
   const py = parent.y + HALF;
   const cx = child.x + HALF;
@@ -277,7 +274,7 @@ function PixelIcon({ color, id }: { color: string; id: string }) {
       {rows.map(function (row, y) {
         return row.split("").map(function (ch, x) {
           return ch === "X" ? (
-              <span key={`${x}-${y}`} style={{ background: color, left: x, top: y }} />
+            <span key={`${x}-${y}`} style={{ background: color, left: x, top: y }} />
           ) : null;
         });
       })}

@@ -93,7 +93,7 @@ export class Button {
     this.used.add(beatIndex);
     this.noteMiss(false);
     return {
-      errorMs: DOUBLE_GAP_MS,
+      errorMs: doubleGapMs(upgrades.twinGap),
       points: 0,
       grade: "miss",
       streak: this.streak,

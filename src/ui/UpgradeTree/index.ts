@@ -1,4 +1,4 @@
-import { UPGRADE_DEFS, starMax } from "../../game/upgrades.ts";
+import { starMax, UPGRADE_DEFS } from "../../game/upgrades.ts";
 import type { UpgradeId } from "../../game/types.ts";
 import { COLORS } from "../../game/view.ts";
 import {

@@ -68,10 +68,7 @@ describe("tree progress", function () {
           return n.id === pid;
         });
         assert.ok(parent, pid);
-        assert.ok(
-          parent.x === node.x || parent.y === node.y,
-          `${pid} -> ${node.id}`,
-        );
+        assert.ok(parent.x === node.x || parent.y === node.y, `${pid} -> ${node.id}`);
       }
     }
   });
