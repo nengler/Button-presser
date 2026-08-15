@@ -4,6 +4,9 @@
  */
 import { nearestBeatError, scorePress } from "../src/game/timing.ts";
 import { windowMs } from "../src/game/upgrades.ts";
+import { MAIN_PAD } from "../src/game/pads.ts";
+import { HEIGHT, WIDTH } from "../src/game/view.ts";
+import { HIT_R, hitPad, pointerToCanvas } from "../src/ui/pointer.ts";
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -68,6 +71,30 @@ const interval = 1000;
     beatIndex: 0,
   });
   assert(late.points === early.points, "early/late same abs error should match");
+}
+
+{
+  const scale = 3;
+  const canvas = {
+    width: WIDTH,
+    height: HEIGHT,
+    getBoundingClientRect() {
+      return { left: 100, top: 50, width: WIDTH * scale, height: HEIGHT * scale };
+    },
+  };
+  const pads = [{ id: MAIN_PAD.id }];
+  const onPad = pointerToCanvas(
+    canvas,
+    100 + (MAIN_PAD.x / WIDTH) * WIDTH * scale,
+    50 + (MAIN_PAD.y / HEIGHT) * HEIGHT * scale,
+  );
+  assert(onPad !== null, "scaled pad click should map onto the bitmap");
+  assert(Math.abs(onPad.x - MAIN_PAD.x) < 0.001, `expected x ${MAIN_PAD.x}, got ${onPad.x}`);
+  assert(Math.abs(onPad.y - MAIN_PAD.y) < 0.001, `expected y ${MAIN_PAD.y}, got ${onPad.y}`);
+  assert(hitPad(pads, onPad.x, onPad.y) === MAIN_PAD.id, "center of main pad should hit");
+  assert(hitPad(pads, MAIN_PAD.x + HIT_R, MAIN_PAD.y) === MAIN_PAD.id, "edge of hit radius should hit");
+  assert(hitPad(pads, MAIN_PAD.x + HIT_R + 1, MAIN_PAD.y) === null, "outside hit radius should miss");
+  assert(pointerToCanvas(canvas, 99, 50) === null, "letterbox left of canvas should miss");
 }
 
 console.log("smoke ok");

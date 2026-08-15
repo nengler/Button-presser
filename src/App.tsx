@@ -33,9 +33,7 @@ export function App() {
     <div className="page">
       <div className="frame" style={{ width: WIDTH * scale, height: HEIGHT * scale }}>
         <div className="stage" style={{ transform: `scale(${scale})` }}>
-          <div className="playfield">
-            <Playfield game={game} />
-          </div>
+          <Playfield game={game} />
           <Hud
             snap={snap}
             pressFlashUntil={pressFlashUntil}
