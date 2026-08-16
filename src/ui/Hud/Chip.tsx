@@ -1,35 +1,25 @@
 import { CSSProperties } from "react";
 import { Chip } from "./types";
 
-const SCORE_X = 10;
-const SCORE_Y = 6;
-
 type Props = {
   chip: Chip;
-  onLand: (id: string) => void;
+  onDone: (id: string) => void;
 };
 
-export default function FlyChip({ chip, onLand }: Props) {
-  const style: CSSProperties & {
-    "--x0": string;
-    "--y0": string;
-    "--x1": string;
-    "--y1": string;
-    "--delay": string;
-  } = {
+export default function ScoreChip({ chip, onDone }: Props) {
+  const style: CSSProperties & { "--delay": string } = {
     color: chip.color,
-    "--x0": `${chip.x0}px`,
-    "--y0": `${chip.y0}px`,
-    "--x1": `${SCORE_X}px`,
-    "--y1": `${SCORE_Y}px`,
+    left: chip.x0,
+    top: chip.y0,
     "--delay": `${chip.delay}ms`,
   };
   return (
     <div
       className={chip.label ? "score-chip named" : "score-chip"}
       style={style}
-      onAnimationEnd={function () {
-        onLand(chip.id);
+      onAnimationEnd={function (e) {
+        if (e.animationName !== "score-chip") return;
+        onDone(chip.id);
       }}
     >
       {chip.label ? `+${chip.pts} ${chip.label}` : `+${chip.pts}`}
