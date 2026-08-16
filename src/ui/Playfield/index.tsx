@@ -127,7 +127,6 @@ function bindPlayfield(game: Game, canvas: HTMLCanvasElement | null) {
   }
 
   function onPointerDown(e: PointerEvent) {
-    if (!e.isPrimary) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if (uiControl(e.target)) return;
     const pos = pointerToCanvas(surface, e.clientX, e.clientY);

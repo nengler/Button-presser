@@ -39,6 +39,14 @@ describe("Button press", function () {
     assert.equal(extra.streak, 1);
   });
 
+  it("accepts two buttons at the same timestamp", function () {
+    const main = new Button({ def: MAIN_BUTTON, origin: 0 });
+    const extra = new Button({ def: EXTRA_BUTTONS[0], origin: 0 });
+    const w = world();
+    assert.equal(main.press({ now: 0, fromStar: false, world: w }).ok, true);
+    assert.equal(extra.press({ now: 0, fromStar: false, world: w }).ok, true);
+  });
+
   it("rejects a second extra hit on the same beat", function () {
     const extra = new Button({ def: EXTRA_BUTTONS[0], origin: 0 });
     const w = world();

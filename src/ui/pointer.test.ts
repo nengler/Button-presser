@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buttonCenter, MAIN_BUTTON } from "../game/buttons.ts";
+import { buttonCenter, EXTRA_BUTTONS, MAIN_BUTTON } from "../game/buttons.ts";
 import { HEIGHT, WIDTH } from "../game/view.ts";
 import { HIT_R, hitButton, pointerToCanvas } from "./pointer.ts";
 
@@ -38,5 +38,14 @@ describe("hitButton", function () {
     assert.equal(hitButton(buttons, main.x, main.y), MAIN_BUTTON.id);
     assert.equal(hitButton(buttons, main.x + HIT_R, main.y), MAIN_BUTTON.id);
     assert.equal(hitButton(buttons, main.x + HIT_R + 1, main.y), null);
+  });
+
+  it("picks each ring from its own center when two are on stage", function () {
+    const slow = EXTRA_BUTTONS[0];
+    const buttons = [{ id: MAIN_BUTTON.id }, { id: slow.id }];
+    const left = buttonCenter(0, 2);
+    const right = buttonCenter(1, 2);
+    assert.equal(hitButton(buttons, left.x, left.y), MAIN_BUTTON.id);
+    assert.equal(hitButton(buttons, right.x, right.y), slow.id);
   });
 });
