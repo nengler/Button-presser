@@ -7,7 +7,7 @@ import { useLerpedScore } from "../hooks/useLerpedScore.ts";
 import "./index.css";
 import GradePuff from "./GradePuff.tsx";
 import { Chip, Puff } from "./types.ts";
-import FlyChip from "./Chip.tsx";
+import ScoreChip from "./Chip.tsx";
 
 const CHIP_LINE = 8;
 const CHIP_DELAY = 70;
@@ -98,12 +98,8 @@ export function Hud({ snap, onShop }: { snap: GameSnapshot; onShop: () => void }
   });
 
   const total = Math.floor(snap.score);
-  let pending = chips.reduce(function (sum, chip) {
-    return sum + chip.pts;
-  }, 0);
 
   if (total < seenScore) {
-    pending = 0;
     setSeenScore(total);
     setSeenNonce(snap.hitNonce);
     setChips([]);
@@ -134,7 +130,7 @@ export function Hud({ snap, onShop }: { snap: GameSnapshot; onShop: () => void }
       });
     }
     if (delta > 0) {
-      pending += delta;
+      setPop(true);
       setChips(function (list) {
         if (
           list.some(function (c) {
@@ -150,7 +146,7 @@ export function Hud({ snap, onShop }: { snap: GameSnapshot; onShop: () => void }
     setSeenScore(total);
   }
 
-  const scoreText = useLerpedScore(total - pending);
+  const scoreText = useLerpedScore(total);
 
   return (
     <>
@@ -197,16 +193,15 @@ export function Hud({ snap, onShop }: { snap: GameSnapshot; onShop: () => void }
       })}
       {chips.map(function (chip) {
         return (
-          <FlyChip
+          <ScoreChip
             key={chip.id}
             chip={chip}
-            onLand={function (id) {
+            onDone={function (id) {
               setChips(function (list) {
                 return list.filter(function (c) {
                   return c.id !== id;
                 });
               });
-              setPop(true);
             }}
           />
         );
