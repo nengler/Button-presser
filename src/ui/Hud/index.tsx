@@ -9,7 +9,7 @@ import GradePuff from "./GradePuff.tsx";
 import { Chip, Puff } from "./types.ts";
 import ScoreChip from "./Chip.tsx";
 
-const CHIP_LINE = 8;
+const CHIP_LINE = 10;
 const CHIP_DELAY = 70;
 
 function bonusTotal(result: PressResult): number {
